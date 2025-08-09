@@ -3,7 +3,7 @@ import app from "./app";
 
 const options = {
     fetch: app.fetch,
-    port: 3000
+    port: parseInt(process.env.PORT || "3000")
 }
 
 const listeningCallback = (info: any) => {
