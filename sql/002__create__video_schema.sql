@@ -8,7 +8,7 @@ CREATE TYPE job_status AS ENUM ('pending', 'processing', 'completed', 'failed');
 
 CREATE TABLE IF NOT EXISTS videos (
     id UUID PRIMARY KEY,
-    owner_id TEXT NOT NULL,
+    owner_id UUID NOT NULL REFERENCES users(id),
     original_file_name TEXT NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
