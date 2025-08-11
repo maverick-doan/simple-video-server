@@ -17,5 +17,5 @@ export interface Video {
 
 export interface TranscodeRequest {
     videoId: string;
-    qualities: Quality;
+    qualities: Quality[];
 }
