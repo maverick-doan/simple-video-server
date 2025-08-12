@@ -48,3 +48,22 @@ export async function createTranscodeJob(params: {
     return toTranscodeJob(rows[0]);
 }
 
+export async function getTranscodeJobById(id: string): Promise<TranscodeJob | undefined> {
+    const q = `
+      SELECT id, video_id, status::text AS status, requested_qualities::text[] AS requested_qualities,
+             output_message, created_at, updated_at
+      FROM transcode_jobs WHERE id=$1
+    `;
+    const { rows } = await pool.query(q, [id]);
+    if (!rows[0]) return undefined;
+    return toTranscodeJob(rows[0]);
+}
+
+export async function updateTranscodeJob(params: {
+    id: string;
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    outputMessage?: string | null;
+}): Promise<void> {
+    const q = `UPDATE transcode_jobs SET status=$2, output_message=$3 WHERE id=$1`;
+    await pool.query(q, [params.id, params.status, params.outputMessage ?? null]);
+}
