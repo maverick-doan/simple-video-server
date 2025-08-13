@@ -38,7 +38,7 @@ function isValidTranscodeRequest (body: unknown): body is TranscodeRequest {
     )
 }
 
-export async function requestTranscode (c: Context<{ Variables: AppBindings }>) {
+export async function requestTranscodeJob (c: Context<{ Variables: AppBindings }>) {
     const user = c.get('user');
     if (!user) {
         return c.json({ error: 'Unauthorized' }, 401);
