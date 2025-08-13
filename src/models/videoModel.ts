@@ -35,38 +35,39 @@ function toVideo(r: DbVideoRow): Video {
 }
 
 export async function createVideo(params: {
-  ownerId: string;
-  originalFileName: string;
-  title: string;
-  description?: string;
-  url: string;
-  quality: Quality;
-  durationSeconds: number;
-  sizeBytes: number;
+    id?: string;
+    ownerId: string;
+    originalFileName: string;
+    title: string;
+    description?: string;
+    url: string;
+    quality: Quality;
+    durationSeconds: number;
+    sizeBytes: number;
 }): Promise<Video> {
-  const id = uuid();
-  const q = `
-    INSERT INTO videos (id, owner_id, original_file_name, title, description, url, quality, duration_seconds, size_bytes)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-    RETURNING *
-  `;
+    const id = params.id ?? uuid();
+    const q = `
+        INSERT INTO videos (id, owner_id, original_file_name, title, description, url, quality, duration_seconds, size_bytes)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+        RETURNING *
+    `;
 
-  const values = [
-    id, params.ownerId, params.originalFileName, params.title, params.description ?? null,
-    params.url, params.quality, params.durationSeconds, params.sizeBytes
-  ];
+    const values = [
+        id, params.ownerId, params.originalFileName, params.title, params.description ?? null,
+        params.url, params.quality, params.durationSeconds, params.sizeBytes
+    ];
 
-  const { rows } = await pool.query<DbVideoRow>(q, values);
+    const { rows } = await pool.query<DbVideoRow>(q, values);
 
-  if (!rows[0]) {
-    throw new Error('Failed to create video');
-  }
-  return toVideo(rows[0]);
+    if (!rows[0]) {
+        throw new Error('Failed to create video');
+    }
+    return toVideo(rows[0]);
 }
 
 export async function getVideoById(id: string): Promise<Video | undefined> {
-  const q = `SELECT * FROM videos WHERE id=$1 AND is_deleted=FALSE`;
-  const { rows } = await pool.query<DbVideoRow>(q, [id]);
-  return rows[0] ? toVideo(rows[0]) : undefined;
+    const q = `SELECT * FROM videos WHERE id=$1 AND is_deleted=FALSE`;
+    const { rows } = await pool.query<DbVideoRow>(q, [id]);
+    return rows[0] ? toVideo(rows[0]) : undefined;
 }
 

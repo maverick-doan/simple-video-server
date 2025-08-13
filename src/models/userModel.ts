@@ -9,5 +9,5 @@ export async function getUserByUsernameOrEmail(identifier: string) {
         email: string;
         password_hash: string;
         role: 'admin' | 'user';
-    } | undefined; // Will move to a separated user model in later stage as user management is not yet in scope 
+    } | undefined; // Will move to a separated user type in later stage as user management is not yet in scope 
 }
