@@ -5,6 +5,8 @@ export const ALLOWED_TYPES = ['video/mp4', 'video/quicktime'];
 export const MAX_FILE_SIZE = 1024 * 1024 * 100; // 100MB
 export const MAX_DURATION_SECONDS = 60 * 60; // 1 hour
 export const SUPPORTED_CODECS = ['h264']
+export const DEFAULT_QUALITY = '1080p';
+export const ALLOWED_QUALITIES = ['1080p', '720p', '480p', '360p', '240p'];
 
 export interface Video {
     id: string;
