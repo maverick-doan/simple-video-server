@@ -9,7 +9,7 @@ import { createVideo } from "../models/videoModel";
 import * as fileUtils from "../utils/file";
 import type { ProbeResult, Video } from "../types/video";
 import { getVideoById } from "../models/videoModel";
-import { ALLOWED_TYPES, MAX_FILE_SIZE, MAX_DURATION_SECONDS, SUPPORTED_CODECS, DEFAULT_QUALITY, ALLOWED_QUALITIES } from "../types/video";
+import { ALLOWED_TYPES, MAX_FILE_SIZE, MAX_DURATION_SECONDS, SUPPORTED_CODECS, DEFAULT_QUALITY, ALLOWED_QUALITIES, type Quality } from "../types/video";
 
 export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
     const user = c.get('user');
@@ -49,7 +49,7 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
 	const baseName = `${videoId}_${safeBase}`;
 	const uploadDir = path.join(env.uploadDir, 'original', user.sub);
 	await fileUtils.ensureDir(uploadDir);
-	const videoPath = path.join(uploadDir, `${baseName}.${ext}`);
+	const videoPath = path.join(uploadDir, 'originals', `${baseName}.${ext}`);
 
     const meta: ProbeResult = await probe(videoPath);
 
@@ -86,11 +86,11 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
 
     const video = await createVideo({
 		ownerId: user.sub,
-		originalFileName: originalName,
+		originalFileName: safeBase,
 		title,
 		description,
 		url: videoPath, // Will switch to URL in later stages
-		quality: '1080p',
+		quality: quality as Quality,
 		durationSeconds: meta.durationSeconds,
 		sizeBytes: meta.sizeBytes
 	});
