@@ -47,7 +47,7 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
 	const parsed = path.parse(originalName);
 	const safeBase = parsed.name.replace(/[^\w.-]+/g, '_');
 	const baseName = `${videoId}_${safeBase}`;
-	const uploadDir = path.join(env.uploadDir, 'original', user.sub);
+	const uploadDir = path.join(env.uploadDir, user.sub);
 	await fileUtils.ensureDir(uploadDir);
 	const videoPath = path.join(uploadDir, 'originals', `${baseName}.${ext}`);
 
