@@ -20,12 +20,16 @@ function qualityToHeight(quality: Quality): number {
 }
 
 // Get video duration
-export function probe(inputPath: string): Promise<{ durationSeconds: number }> {
-    return new Promise((resolve, reject) => {
-        ffmpeg.ffprobe(inputPath, (err, data) => {
+export async function probe(inputPath: string): Promise<{ durationSeconds: number, sizeBytes: number }> {
+    return new Promise(async (resolve, reject) => {
+        ffmpeg.ffprobe(inputPath, async (err, data) => {
             if (err) return reject(err);
             const seconds = Number(data.format.duration ?? 0);
-            resolve({ durationSeconds: Math.round(seconds) });
+            const sizeBytes = await fileUtils.fileSizeBytes(inputPath)
+            resolve({
+                durationSeconds: Math.round(seconds),
+                sizeBytes: sizeBytes
+            });
         });
     });
 }

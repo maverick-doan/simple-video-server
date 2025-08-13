@@ -5,7 +5,7 @@ export async function ensureDir(dirPath: string) {
     await mkdir(dirPath, { recursive: true });
 }
 
-export async function fileSizeBytes(filePath: string) {
+export async function fileSizeBytes(filePath: string): Promise<number> {
     const stats = await stat(filePath);
     return stats.size;
 }
