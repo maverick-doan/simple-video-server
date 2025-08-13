@@ -39,8 +39,3 @@ export type ProbeResult = {
 	videoStreams: VideoStreamInfo[];
 	audioStreams: { index: number; codecName?: string }[];
 };
-
-export interface TranscodeRequest {
-    videoId: string;
-    qualities: Quality[];
-}
