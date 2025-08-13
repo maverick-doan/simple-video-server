@@ -59,7 +59,7 @@ export async function probe(inputPath: string): Promise<ProbeResult> {
 	};
 }
 
-export function transcodeToQuality(inputPath: string, outputPath: string, quality: Quality): Promise<void> {
+function transcodeToQuality(inputPath: string, outputPath: string, quality: Quality): Promise<void> {
     const height = qualityToHeight(quality);
     return new Promise((resolve, reject) => {
         ffmpeg(inputPath).outputOptions([
