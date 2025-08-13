@@ -4,7 +4,7 @@ import { createTranscodeJob, getTranscodeJobById, updateTranscodeJob } from "../
 import type { TranscodeRequest } from "../types/transcodeJob";
 import { transcodeMultipleQualities } from "../utils/transcode";
 import { getVideoById } from "../models/videoModel";
-import type { Video } from "../types/video";
+import  { type Video, ALLOWED_QUALITIES, type Quality } from "../types/video";
 import * as path from 'path';
 import { env } from "../config/env";
 import * as fileUtils from '../utils/file';
@@ -58,6 +58,16 @@ export async function requestTranscodeJob (c: Context<{ Variables: AppBindings }
 
     if (video.ownerId !== user.sub) {
         return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    if (qualities.length === 1 && qualities[0] === video.quality) {
+        return c.json({ error: 'Requested quality is already the same as the video quality' }, 400);
+    }
+
+    for (const quality of qualities) {
+        if (!ALLOWED_QUALITIES.includes(quality as Quality)) {
+            return c.json({ error: 'Invalid quality' }, 400);
+        }
     }
 
     const job = await createTranscodeJob({
