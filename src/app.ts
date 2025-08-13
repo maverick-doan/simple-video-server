@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import { authRouter } from "./routes/auth";
+import { videoRouter } from "./routes/video";
 
 const app = new Hono();
 
 app.route('/api/auth', authRouter);
+app.route('/api/video', videoRouter);
 
 app.notFound((c) => {
     return c.json({

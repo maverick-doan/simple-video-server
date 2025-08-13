@@ -7,7 +7,8 @@ import * as path from 'path';
 import { probe, choosePreferredVideoStream } from "../utils/transcode";
 import { createVideo } from "../models/videoModel";
 import * as fileUtils from "../utils/file";
-import type { ProbeResult } from "../types/video";
+import type { ProbeResult, Video } from "../types/video";
+import { getVideoById } from "../models/videoModel";
 import { ALLOWED_TYPES, MAX_FILE_SIZE, MAX_DURATION_SECONDS, SUPPORTED_CODECS, DEFAULT_QUALITY, ALLOWED_QUALITIES } from "../types/video";
 
 export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
@@ -100,4 +101,28 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
 		chosenStreamIndex: preferred.index
 	}}, 201);
 
+}
+
+export async function getVideo(c: Context<{ Variables: AppBindings }>) {
+    const user = c.get('user');
+    if (!user) {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const videoId = c.req.param('id');
+    if (!videoId) {
+        return c.json({ error: 'Video ID is required' }, 400);
+    }
+
+    const video: Video | undefined = await getVideoById(videoId);
+
+    if (!video) {
+        return c.json({ error: 'Video not found' }, 404);
+    }
+
+    if (video.ownerId !== user.sub) {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    return c.json({ videoData: video }, 200);
 }
