@@ -1,4 +1,4 @@
-import * as ffmpeg from 'fluent-ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 import ffmpegBinary from 'ffmpeg-static'; // precompiled ffmpeg binary
 import type { Quality, ProbeResult, VideoStreamInfo } from '../types/video';
 import { SUPPORTED_CODECS } from '../types/video';
