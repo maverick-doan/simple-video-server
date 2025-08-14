@@ -1,5 +1,6 @@
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegBinary from 'ffmpeg-static'; // precompiled ffmpeg binary
+import { path as ffprobeBinary } from 'ffprobe-static'; // precompiled ffprobe binary
 import type { Quality, ProbeResult, VideoStreamInfo } from '../types/video';
 import { SUPPORTED_CODECS } from '../types/video';
 import * as fileUtils from './file';
@@ -7,6 +8,10 @@ import * as path from 'path';
 
 if (ffmpegBinary) {
     ffmpeg.setFfmpegPath(ffmpegBinary);
+}
+
+if (ffprobeBinary) {
+    ffmpeg.setFfprobePath(ffprobeBinary);
 }
 
 function qualityToHeight(quality: Quality): number {
