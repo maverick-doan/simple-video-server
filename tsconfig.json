@@ -14,7 +14,8 @@
     // For nodejs:
     "lib": ["esnext"],
     // and npm install -D @types/node
-
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     // Other Outputs
     "sourceMap": true,
     "declaration": true,
