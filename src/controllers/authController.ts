@@ -61,13 +61,13 @@ export async function login(c: Context<{ Variables: AppBindings }>) {
 
 export async function me(c: Context<{ Variables: AppBindings }>) {
     try {
-      const user = c.get('user');
-      if (!user) {
-        return c.json({ error: 'Unauthorized' }, 401);
-      }
-      return c.json({ user });
+        const user = c.get('user');
+        if (!user) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+        return c.json({ user });
     } catch (err) {
-      console.error('Me endpoint error:', err);
-      return c.json({ error: 'Internal server error' }, 500);
+        console.error('Me endpoint error:', err);
+        return c.json({ error: 'Internal server error' }, 500);
     }
-  }
+}
