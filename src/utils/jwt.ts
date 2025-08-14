@@ -1,4 +1,4 @@
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import type { JwtUser } from '../types/user';
 import type { Secret, SignOptions } from 'jsonwebtoken';
