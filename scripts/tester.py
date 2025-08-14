@@ -1,0 +1,187 @@
+import asyncio
+import aiohttp
+import os
+import time
+import argparse
+import sys
+
+BASE_URL = os.getenv("API_URL", "http://localhost:3000")
+USER = os.getenv("API_USER", "admin")
+PASSWORD = os.getenv("API_USER_PASSWORD", "admin123")
+CONCURRENCY = int(os.getenv("CONCURRENCY", "4"))
+REQUESTS = int(os.getenv("REQUESTS", "10"))
+VIDEO_PATH = os.getenv("VIDEO_PATH", "test.mp4")
+
+async def login(session: aiohttp.ClientSession) -> str:
+    body = {
+        "username": USER,
+        "password": PASSWORD
+    }
+
+    async with session.post(f"{BASE_URL}/api/auth/login", json=body) as resp:
+        print(await resp.json())
+        if resp.status != 200:
+            raise Exception(f'Login failed: {resp.status}')
+        data = await resp.json()
+        return data['token']
+
+async def upload_video(session: aiohttp.ClientSession, token: str, video_path: str, title: str = "Test Video", description: str = "Uploaded via test script") -> str:
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"Video file not found: {video_path}")
+
+    data = aiohttp.FormData()
+    data.add_field('title', title)
+    data.add_field('description', description)
+    with open(video_path, 'rb') as f:
+        filename = os.path.basename(video_path)
+        data.add_field('file', f, filename=filename, content_type='video/mp4')
+    
+    headers = {'Authorization': f'Bearer {token}'}
+
+    async with session.post(f'{BASE_URL}/api/videos/upload', data=data, headers=headers) as resp:
+        print(await resp.json())
+        if resp.status != 201:
+            error_text = await resp.text()
+            raise Exception(f'Upload failed: {error_text}')
+        data = await resp.json()
+        video_id = data['video']['id']
+        return video_id
+
+async def request_transcode(session: aiohttp.ClientSession, token: str, video_id: str, qualities: list = None) -> str:
+    if qualities is None:
+        qualities = ['720p', '480p']
+    
+    transcode_data = {
+        'videoId': video_id,
+        'qualities': qualities
+    }
+    
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {token}'
+    }
+    
+    async with session.post(f'{BASE_URL}/api/transcode', json=transcode_data, headers=headers) as resp:
+        print(await resp.json())
+        if resp.status != 202:
+            error_text = await resp.text()
+            raise Exception(f'Transcode request failed: {error_text}')
+        
+        data = await resp.json()
+        job_id = data['jobId']
+        return job_id
+
+async def check_job_status(session: aiohttp.ClientSession, token: str, job_id: str) -> dict:
+    headers = {'Authorization': f'Bearer {token}'}
+    
+    async with session.get(f'{BASE_URL}/api/transcode/{job_id}', headers=headers) as resp:
+        print(await resp.json())
+        if resp.status != 200:
+            error_text = await resp.text()
+            raise Exception(f'Job status check failed: {error_text}')
+        
+        data = await resp.json()
+        return data['job']
+
+async def load_test_transcode(session: aiohttp.ClientSession, token: str, video_id: str, concurrency: int, requests: int):
+    print(f"Starting load test: {requests} requests with concurrency {concurrency}")
+    
+    start_time = time.time()
+    in_flight = []
+    count = 0
+    
+    async def submit_job():
+        try:
+            await request_transcode(session, token, video_id)
+        except Exception as e:
+            raise e
+    
+    while count < requests:
+        # Start new requests up to concurrency limit
+        while len(in_flight) < concurrency and count < requests:
+            task = asyncio.create_task(submit_job())
+            in_flight.append(task)
+            count += 1
+        
+        # Wait for at least one to complete
+        if in_flight:
+            done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
+            in_flight = list(pending)
+    
+    # Wait for remaining requests
+    if in_flight:
+        await asyncio.gather(*in_flight, return_exceptions=True)
+    
+    elapsed = time.time() - start_time
+    print(f"Load test completed: {requests} jobs submitted in {elapsed:.2f}s")
+
+
+async def main():
+    parser = argparse.ArgumentParser(description='Test video upload and transcoding')
+    parser.add_argument('--video-path', help='Path to video file to upload')
+    parser.add_argument('--video-id', help='Use existing video ID instead of uploading')
+    parser.add_argument('--upload-only', action='store_true', help='Only upload, don\'t transcode')
+    parser.add_argument('--load-test', action='store_true', help='Run load test after upload')
+    parser.add_argument('--concurrency', type=int, default=CONCURRENCY, help='Concurrency for load test')
+    parser.add_argument('--requests', type=int, default=REQUESTS, help='Number of requests for load test')
+    parser.add_argument('--check-job', help='Check status of specific job ID')
+    
+    args = parser.parse_args()
+    
+    async with aiohttp.ClientSession() as session:
+        try:
+            print(f"Logging in as {USER}...")
+            token = await login(session)
+            print("Login successful!")
+            
+            if args.check_job:
+                # Check specific job status
+                job = await check_job_status(session, token, args.check_job)
+                print(f"Job Status: {job['status']}")
+                if job['outputMessage']:
+                    print(f"Output: {job['outputMessage']}")
+                return
+            
+            video_id = args.video_id
+            
+            if not video_id and not args.video_path:
+                print("Error: Either --video-path or --video-id must be provided")
+                sys.exit(1)
+            
+            if not video_id:
+                # Upload video
+                video_path = args.video_path or VIDEO_PATH
+                if not video_path:
+                    print("Error: No video path provided")
+                    sys.exit(1)
+                
+                print(f"Uploading video: {video_path}")
+                video_id = await upload_video(session, token, video_path)
+            
+            if args.upload_only:
+                print("Upload completed. Exiting.")
+                return
+            
+            # Request transcode
+            print("Requesting video transcoding...")
+            job_id = await request_transcode(session, token, video_id)
+            
+            # Wait a bit and check status
+            print("Waiting 5 seconds before checking job status...")
+            await asyncio.sleep(5)
+            
+            job = await check_job_status(session, token, job_id)
+            print(f"Job Status: {job['status']}")
+            if job['outputMessage']:
+                print(f"Output: {job['outputMessage']}")
+            
+            if args.load_test:
+                # Run load test
+                await load_test_transcode(session, token, video_id, args.concurrency, args.requests)
+            
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+
+if __name__ == '__main__':
+    asyncio.run(main())
