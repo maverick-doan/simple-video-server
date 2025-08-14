@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import type { AppBindings } from "../config/app";
-import { writeFile } from 'fs/promises';
+import { writeFile, rename, unlink } from 'fs/promises';
 import { env } from '../config/env';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
@@ -51,56 +51,69 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
 	await fileUtils.ensureDir(uploadDir);
 	const videoPath = path.join(uploadDir, 'originals', `${baseName}.${ext}`);
 
-    const meta: ProbeResult = await probe(videoPath);
+    // Temp storage for file upload ahead of validation
+    const tempPath = path.join(uploadDir, 'temp', `${baseName}.${ext}`);
 
-	if (meta.durationSeconds > MAX_DURATION_SECONDS) {
-		return c.json({
-			error: `Video duration exceeds ${MAX_DURATION_SECONDS} seconds`,
-			detectedDurationSeconds: meta.durationSeconds
-		}, 400);
-	}
+    try {
+        await writeFile(tempPath, Buffer.from(await file.arrayBuffer()));
 
-	// Handle multiple video streams and codec support
-	if (!meta.videoStreams.length) {
-		return c.json({ error: 'No video stream detected' }, 400);
-	}
+        const meta: ProbeResult = await probe(tempPath);
 
-	const preferred = choosePreferredVideoStream(meta.videoStreams, SUPPORTED_CODECS);
-	if (!preferred) {
-		return c.json({
-			error: 'Unsupported video codec. Supported codecs',
-			supported: SUPPORTED_CODECS
-		}, 400);
-	}
+        if (meta.durationSeconds > MAX_DURATION_SECONDS) {
+            await unlink(tempPath);
+            return c.json({
+                error: `Video duration exceeds ${MAX_DURATION_SECONDS} seconds`,
+                detectedDurationSeconds: meta.durationSeconds
+            }, 400);
+        }
 
-    await writeFile(videoPath, Buffer.from(await file.arrayBuffer()));
+        if (!meta.videoStreams.length) {
+            await unlink(tempPath);
+            return c.json({ error: 'No video stream detected' }, 400);
+        }
 
-    if (preferred.height && !ALLOWED_QUALITIES.includes(preferred.height.toString())) {
-        return c.json({
-            error: 'Unsupported video resolution',
-            supportedQualities: ALLOWED_QUALITIES
-        }, 400);
+        const preferred = choosePreferredVideoStream(meta.videoStreams, SUPPORTED_CODECS);
+        if (!preferred) {
+            await unlink(tempPath);
+            return c.json({
+                error: 'Unsupported video codec. Supported codecs',
+                supported: SUPPORTED_CODECS
+            }, 400);
+        }
+
+        if (preferred.height && !ALLOWED_QUALITIES.includes(preferred.height.toString())) {
+            await unlink(tempPath);
+            return c.json({
+                error: 'Unsupported video resolution',
+                supportedQualities: ALLOWED_QUALITIES
+            }, 400);
+        }
+
+        // Move temp file to final destination
+        await rename(tempPath, videoPath);
+
+        const quality = preferred.height ? `${preferred.height}p` : DEFAULT_QUALITY;
+
+        const video = await createVideo({
+            ownerId: user.sub,
+            originalFileName: safeBase,
+            title,
+            description,
+            url: videoPath, // Will switch to URL in later stages
+            quality: quality as Quality,
+            durationSeconds: meta.durationSeconds,
+            sizeBytes: meta.sizeBytes
+        });
+
+        return c.json({ video, analysis: {
+            format: meta.formatName,
+            videoStreams: meta.videoStreams,
+            chosenStreamIndex: preferred.index
+        }}, 201);
+    } catch (error) {
+        await unlink(tempPath);
+        return c.json({ error: 'Failed to upload video' }, 500);
     }
-
-    const quality = preferred.height ? `${preferred.height}p` : DEFAULT_QUALITY;
-
-    const video = await createVideo({
-		ownerId: user.sub,
-		originalFileName: safeBase,
-		title,
-		description,
-		url: videoPath, // Will switch to URL in later stages
-		quality: quality as Quality,
-		durationSeconds: meta.durationSeconds,
-		sizeBytes: meta.sizeBytes
-	});
-
-	return c.json({ video, analysis: {
-		format: meta.formatName,
-		videoStreams: meta.videoStreams,
-		chosenStreamIndex: preferred.index
-	}}, 201);
-
 }
 
 export async function getVideo(c: Context<{ Variables: AppBindings }>) {

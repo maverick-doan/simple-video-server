@@ -6,3 +6,5 @@ storage
 Dockerfile
 docker-compose.yml
 .env
+scripts
+README.md
