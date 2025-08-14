@@ -2,7 +2,7 @@ version: '3.9'
 services:
   postgres:
     image: postgres:17
-    container_name: postgres
+    container_name: video-app-postgres
     environment:
       POSTGRES_USER: superman
       POSTGRES_PASSWORD: secret_to_your_heart
@@ -18,5 +18,23 @@ services:
       timeout: 5s
       retries: 5
 
+  api: 
+    image: video-app-api
+    build: .
+    container_name: video-app-api
+    depends_on:
+      - postgres
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://superman:secret_to_your_heart@postgres:5432/video_app_db
+      JWT_SECRET: dev-super-secret-muhahahahahahahhahahahahahaha-haha-hhhhhaaaaa
+      UPLOAD_DIR: /app/uploads
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./uploads:/app/uploads
+
 volumes:
   pgdata:
+  uploads:
