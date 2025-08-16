@@ -28,17 +28,20 @@ async def login(session: aiohttp.ClientSession) -> str:
 async def upload_video(session: aiohttp.ClientSession, token: str, video_path: str, title: str = "Test Video", description: str = "Uploaded via test script") -> str:
     if not os.path.exists(video_path):
         raise FileNotFoundError(f"Video file not found: {video_path}")
-
+    mime_type = 'video/mp4'
     data = aiohttp.FormData()
     data.add_field('title', title)
     data.add_field('description', description)
+    data.add_field('type', mime_type)
+    filename = os.path.basename(video_path)
+    data.add_field('originalName', filename)
     with open(video_path, 'rb') as f:
-        filename = os.path.basename(video_path)
-        data.add_field('file', f, filename=filename, content_type='video/mp4')
+        file_content = f.read()
+        data.add_field('file', file_content, filename=filename, content_type='video/mp4')
     
     headers = {'Authorization': f'Bearer {token}'}
 
-    async with session.post(f'{BASE_URL}/api/videos/upload', data=data, headers=headers) as resp:
+    async with session.post(f'{BASE_URL}/api/video/upload', data=data, headers=headers) as resp:
         print(await resp.json())
         if resp.status != 201:
             error_text = await resp.text()
@@ -61,7 +64,7 @@ async def request_transcode(session: aiohttp.ClientSession, token: str, video_id
         'Authorization': f'Bearer {token}'
     }
     
-    async with session.post(f'{BASE_URL}/api/transcode', json=transcode_data, headers=headers) as resp:
+    async with session.post(f'{BASE_URL}/api/video/transcode', json=transcode_data, headers=headers) as resp:
         print(await resp.json())
         if resp.status != 202:
             error_text = await resp.text()
@@ -74,14 +77,16 @@ async def request_transcode(session: aiohttp.ClientSession, token: str, video_id
 async def check_job_status(session: aiohttp.ClientSession, token: str, job_id: str) -> dict:
     headers = {'Authorization': f'Bearer {token}'}
     
-    async with session.get(f'{BASE_URL}/api/transcode/{job_id}', headers=headers) as resp:
+    async with session.get(f'{BASE_URL}/api/video/transcode/{job_id}', headers=headers) as resp:
         print(await resp.json())
         if resp.status != 200:
             error_text = await resp.text()
             raise Exception(f'Job status check failed: {error_text}')
         
         data = await resp.json()
-        return data['job']
+        if 'transcodeJob' in data:
+            return data['transcodeJob']
+        return data
 
 async def load_test_transcode(session: aiohttp.ClientSession, token: str, video_id: str, concurrency: int, requests: int):
     print(f"Starting load test: {requests} requests with concurrency {concurrency}")
