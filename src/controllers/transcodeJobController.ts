@@ -78,25 +78,27 @@ export async function requestTranscodeJob (c: Context<{ Variables: AppBindings }
 
     setImmediate(async () => {
         try {
-          await updateTranscodeJob({ id: job.id, status: 'processing' });
-          const inputPath = path.join(env.uploadDir, video.ownerId, 'originals', video.originalFileName ? `${video.id}_${video.originalFileName}` : path.basename(video.url));
-          const outputDir = path.join(env.uploadDir, video.ownerId, 'derived', video.id);
-          await fileUtils.ensureDir(outputDir);
-          const baseName = `output_${job.id}`;
-          const { outputs } = await transcodeMultipleQualities(path.resolve(inputPath), outputDir, qualities, baseName);
-    
-          await updateTranscodeJob({
-            id: job.id,
-            status: 'completed',
-            outputMessage: `Generated: ${outputs.map((o) => path.relative(process.cwd(), o)).join(', ')}`,
-          });
+            await updateTranscodeJob({ id: job.id, status: 'processing' });
+            const inputPath = video.url;
+            console.log('inputPath', inputPath);
+            const outputDir = path.join(env.uploadDir, video.ownerId, 'derived', video.id);
+            await fileUtils.ensureDir(outputDir);
+            const baseName = `output_${job.id}`;
+            const { outputs } = await transcodeMultipleQualities(path.resolve(inputPath), outputDir, qualities, baseName);
+        
+            await updateTranscodeJob({
+                id: job.id,
+                status: 'completed',
+                outputMessage: `Generated: ${outputs.map((o) => path.relative(process.cwd(), o)).join(', ')}`,
+            });
         } catch (e: any) {
-          await updateTranscodeJob({
-            id: job.id,
-            status: 'failed',
-            outputMessage: e?.message ?? 'Transcode failed',
-          });
-          c.json({ error: e?.message ?? 'Transcode failed' }, 500);
+            console.error('Transcode error:', e);
+            await updateTranscodeJob({
+                id: job.id,
+                status: 'failed',
+                outputMessage: e?.message ?? 'Transcode failed',
+            });
+            return c.json({ error: e?.message ?? 'Transcode failed' }, 500);
         }
       });
     
