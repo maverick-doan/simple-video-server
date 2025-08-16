@@ -9,7 +9,7 @@ export async function requireAuth(c: Context<{ Variables: AppBindings }>, next: 
         return c.json({ error: 'Unauthorized' }, 401);
     }
     try {
-        const jwtUser = verifyJwt(token);
+        const jwtUser = await verifyJwt(token);
         c.set('user', jwtUser);
         await next();
     } catch {

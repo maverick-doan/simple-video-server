@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { signJwt } from "../utils/jwt";
 import type { AppBindings } from "../config/app";
 import type { LoginRequest } from "../types/user";
+import { redisService } from "../cache/redis";
 
 function isValidLoginRequest(body: unknown): body is LoginRequest {
     if (!body || typeof body !== 'object') return false;
@@ -69,5 +70,40 @@ export async function me(c: Context<{ Variables: AppBindings }>) {
     } catch (err) {
         console.error('Me endpoint error:', err);
         return c.json({ error: 'Internal server error' }, 500);
+    }
+}
+
+export async function logout(c: Context<{ Variables: AppBindings }>) {
+    try {
+        const user = c.get('user');
+        if (!user) {
+            return c.json({
+                errror: "Unauthorized"
+            }, 401);
+        }
+
+        const token = c.req.header('Authorization')?.split(' ')[1];
+        if (!token) {
+            return c.json({
+                error: "Unauthorized"
+            }, 401);
+        }
+
+        const isBlacklisted = await redisService.isTokenBlacklisted(token);
+        if (isBlacklisted) {
+            return c.json({
+                error: "Unauthorized"
+            }, 401);
+        }
+
+        await redisService.blacklistToken(token, 3600);
+        return c.json({
+            message: "Logged out successfully"
+        }, 200);
+    } catch (err) {
+        console.error('Logout error:', err);
+        return c.json({
+            error: "Internal server error"
+        }, 500);
     }
 }

@@ -17,12 +17,10 @@ export const redisService = {
     async blacklistToken(token: string, expiresIn: number): Promise<void> {
         await client.setEx(`blacklist:${token}`, expiresIn, '1');
     },
-
     async isTokenBlacklisted(token: string): Promise<boolean> {
         const result = await client.exists(`blacklist:${token}`);
         return result === 1;
     },
-
     async close(): Promise<void> {
         await client.quit();
     }
