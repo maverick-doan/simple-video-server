@@ -37,6 +37,7 @@ services:
     environment:
       PORT: 3000
       DATABASE_URL: postgres://superman:secret_to_your_heart@postgres:5432/video_app_db
+      REDIS_URL: redis://redis:6379
       JWT_SECRET: dev-super-secret-muhahahahahahahhahahahahahaha-haha-hhhhhaaaaa
       UPLOAD_DIR: /app/uploads
       NODE_ENV: production
