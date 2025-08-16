@@ -40,7 +40,7 @@ services:
       REDIS_URL: redis://redis:6379
       JWT_SECRET: dev-super-secret-muhahahahahahahhahahahahahaha-haha-hhhhhaaaaa
       UPLOAD_DIR: /app/uploads
-      NODE_ENV: production
+      NODE_ENV: development
     ports:
       - "3000:3000"
     volumes:
