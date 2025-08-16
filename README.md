@@ -14,6 +14,7 @@ And.. my university assignment requires a test API
 
 * **Runtime**: Node.js + TypeScript
 * **API Framework**: Hono (lightweight, fast)
+* **Caching**: Redis
 * **Database**: PostgreSQL (metadata, job tracking)
 * **Video Processing**: ffmpeg
 * **Authentication**: JWT

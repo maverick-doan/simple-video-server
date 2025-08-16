@@ -17,13 +17,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
+  redis:
+    image: redis:7
+    container_name: video-app-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   api: 
     image: video-app-api
     build: .
     container_name: video-app-api
     depends_on:
       - postgres
+      - redis
     environment:
       PORT: 3000
       DATABASE_URL: postgres://superman:secret_to_your_heart@postgres:5432/video_app_db
@@ -34,7 +44,6 @@ services:
       - "3000:3000"
     volumes:
       - ./uploads:/app/uploads
-
 volumes:
   pgdata:
   uploads:
