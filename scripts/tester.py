@@ -118,6 +118,7 @@ async def load_test_transcode(session: aiohttp.ClientSession, token: str, video_
 
 async def main():
     parser = argparse.ArgumentParser(description='Test video upload and transcoding')
+    parser.add_argument('--login', action='store_true', help='Login only')
     parser.add_argument('--video-path', help='Path to video file to upload')
     parser.add_argument('--video-id', help='Use existing video ID instead of uploading')
     parser.add_argument('--upload-only', action='store_true', help='Only upload, don\'t transcode')
@@ -133,6 +134,10 @@ async def main():
             print(f"Logging in as {USER}...")
             token = await login(session)
             print("Login successful!")
+            
+            if args.login:
+                print("Login successful!")
+                return
             
             if args.check_job:
                 # Check specific job status
