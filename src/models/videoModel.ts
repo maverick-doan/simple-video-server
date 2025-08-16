@@ -71,3 +71,19 @@ export async function getVideoById(id: string): Promise<Video | undefined> {
     return rows[0] ? toVideo(rows[0]) : undefined;
 }
 
+export async function getAllVideos(params: { limit: number, offset: number, ownerId?: string }): Promise<{ videos: Video[], total: number }> {
+  const limit = Math.max(1, Math.min(params.limit, 100));
+  const offset = Math.max(0, params.offset);
+  const ownerId = params.ownerId;
+  const whereClause = ownerId ? `AND owner_id='${ownerId}'` : '';
+  const q = `
+    SELECT * FROM videos
+    WHERE is_deleted=FALSE
+    ${whereClause}
+    ORDER BY created_at DESC
+    LIMIT $1
+    OFFSET $2
+  `;
+  const { rows } = await pool.query<DbVideoRow>(q, [limit, offset]);
+  return { videos: rows.map(toVideo), total: rows.length };
+}

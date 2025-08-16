@@ -8,7 +8,7 @@ import { probe, choosePreferredVideoStream } from "../utils/transcode";
 import { createVideo } from "../models/videoModel";
 import * as fileUtils from "../utils/file";
 import type { ProbeResult, Video } from "../types/video";
-import { getVideoById } from "../models/videoModel";
+import { getVideoById, getAllVideos } from "../models/videoModel";
 import { ALLOWED_TYPES, MAX_FILE_SIZE, MAX_DURATION_SECONDS, SUPPORTED_CODECS, DEFAULT_QUALITY, ALLOWED_QUALITIES, type Quality } from "../types/video";
 
 export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
@@ -83,7 +83,7 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
                 supported: SUPPORTED_CODECS
             }, 400);
         }
-        
+
         if (preferred.height && !ALLOWED_QUALITIES.includes(`${preferred.height}p`)) {
             await unlink(tempPath);
             return c.json({
@@ -141,4 +141,27 @@ export async function getVideo(c: Context<{ Variables: AppBindings }>) {
     }
 
     return c.json({ videoData: video }, 200);
+}
+
+export async function listAllVideos(c: Context<{ Variables: AppBindings }>) {
+    try {
+        const user = c.get('user');
+        if (!user) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+
+        if (user.role !== 'admin') {
+            return c.json({ error: 'Forbidden: Admin access required' }, 403);
+        }
+
+        const limit = Number(c.req.query('limit')) || 10;
+        const offset = Number(c.req.query('offset')) || 0;
+        const ownerId = c.req.query('ownerId');
+
+        const { videos, total } = await getAllVideos({ limit, offset, ownerId: ownerId || '' });
+
+        return c.json({ videos, total }, 200);
+    } catch (error) {
+        return c.json({ error: 'Failed to list videos' }, 500);
+    }
 }
