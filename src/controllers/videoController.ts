@@ -47,12 +47,15 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
 	const parsed = path.parse(originalName);
 	const safeBase = parsed.name.replace(/[^\w.-]+/g, '_');
 	const baseName = `${videoId}_${safeBase}`;
-	const uploadDir = path.join(env.uploadDir, user.sub);
-	await fileUtils.ensureDir(uploadDir);
-	const videoPath = path.join(uploadDir, 'originals', `${baseName}.${ext}`);
-
-    // Temp storage for file upload ahead of validation
-    const tempPath = path.join(uploadDir, 'temp', `${baseName}.${ext}`);
+    const userUploadDir = path.join(env.uploadDir, user.sub);
+    const originalsDir = path.join(userUploadDir, 'originals');
+    const tempDir = path.join(userUploadDir, 'temp');
+    
+    await fileUtils.ensureDir(originalsDir);
+    await fileUtils.ensureDir(tempDir);
+    
+    const videoPath = path.join(originalsDir, `${baseName}.${ext}`);
+    const tempPath = path.join(tempDir, `${baseName}.${ext}`);
 
     try {
         await writeFile(tempPath, Buffer.from(await file.arrayBuffer()));
@@ -80,8 +83,8 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
                 supported: SUPPORTED_CODECS
             }, 400);
         }
-
-        if (preferred.height && !ALLOWED_QUALITIES.includes(preferred.height.toString())) {
+        
+        if (preferred.height && !ALLOWED_QUALITIES.includes(`${preferred.height}p`)) {
             await unlink(tempPath);
             return c.json({
                 error: 'Unsupported video resolution',
