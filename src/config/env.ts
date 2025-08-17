@@ -9,4 +9,5 @@ export const env = {
     jwtSecret: process.env.JWT_SECRET!,
     uploadDir: process.env.UPLOAD_DIR || './uploads',
     nodeEnv: process.env.NODE_ENV || 'production',
+    virusTotalApiKey: process.env.VIRUS_TOTAL_API_KEY || '',
 };
