@@ -88,37 +88,70 @@ async def check_job_status(session: aiohttp.ClientSession, token: str, job_id: s
             return data['transcodeJob']
         return data
 
-async def load_test_transcode(session: aiohttp.ClientSession, token: str, video_id: str, concurrency: int, requests: int):
-    print(f"Starting load test: {requests} requests with concurrency {concurrency}")
-    
-    start_time = time.time()
-    in_flight = []
-    count = 0
-    
+async def is_job_running(session: aiohttp.ClientSession, token: str, job_id: str) -> bool:
+    try:
+        headers = {'Authorization': f'Bearer {token}'}
+        async with session.get(f'{BASE_URL}/api/video/transcode/{job_id}', headers=headers) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                job = data.get('transcodeJob', {})
+                status = job.get('status', 'unknown')
+                return status in ['pending', 'processing']
+            return False
+    except:
+        return False
+
+async def load_test_transcode(session: aiohttp.ClientSession, token: str, video_id: str, concurrency: int, requests: int, duration_seconds: int = None):
     async def submit_job():
         try:
             await request_transcode(session, token, video_id)
         except Exception as e:
             raise e
     
-    while count < requests:
-        # Start new requests up to concurrency limit
-        while len(in_flight) < concurrency and count < requests:
-            task = asyncio.create_task(submit_job())
-            in_flight.append(task)
-            count += 1
+    if duration_seconds:
+        print(f"Starting sustained load test: {duration_seconds}s duration with concurrency {concurrency}")
         
-        # Wait for at least one to complete
+        start_time = time.time()
+        count = 0
+        running_jobs = set()
+        
+        while time.time() - start_time < duration_seconds:
+            running_jobs = {job_id for job_id in running_jobs if await is_job_running(session, token, job_id)}
+            
+            if len(running_jobs) < concurrency:
+                try:
+                    job_id = await request_transcode(session, token, video_id)
+                    running_jobs.add(job_id)
+                    count += 1
+                    print(f"Spawned job #{count} (ID: {job_id[:8]}...) - Running: {len(running_jobs)}/{concurrency}")
+                except Exception as e:
+                    print(f"Failed to spawn job: {e}")
+            
+            await asyncio.sleep(1)
+        print(f"Sustained load test completed: {count} jobs submitted over {duration_seconds}s")
+        
+    else:
+        print(f"Starting load test: {requests} requests with concurrency {concurrency}")
+        
+        start_time = time.time()
+        in_flight = []
+        count = 0
+        
+        while count < requests:
+            while len(in_flight) < concurrency and count < requests:
+                task = asyncio.create_task(submit_job())
+                in_flight.append(task)
+                count += 1
+            
+            if in_flight:
+                done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
+                in_flight = list(pending)
+        
         if in_flight:
-            done, pending = await asyncio.wait(in_flight, return_when=asyncio.FIRST_COMPLETED)
-            in_flight = list(pending)
-    
-    # Wait for remaining requests
-    if in_flight:
-        await asyncio.gather(*in_flight, return_exceptions=True)
-    
-    elapsed = time.time() - start_time
-    print(f"Load test completed: {requests} jobs submitted in {elapsed:.2f}s")
+            await asyncio.gather(*in_flight, return_exceptions=True)
+        
+        elapsed = time.time() - start_time
+        print(f"Load test completed: {requests} jobs submitted in {elapsed:.2f}s")
 
 
 async def main():
@@ -130,6 +163,7 @@ async def main():
     parser.add_argument('--load-test', action='store_true', help='Run load test after upload')
     parser.add_argument('--concurrency', type=int, default=CONCURRENCY, help='Concurrency for load test')
     parser.add_argument('--requests', type=int, default=REQUESTS, help='Number of requests for load test')
+    parser.add_argument('--time', type=int, help='Duration in seconds for sustained load test')
     parser.add_argument('--check-job', help='Check status of specific job ID')
     
     args = parser.parse_args()
@@ -148,8 +182,10 @@ async def main():
                 # Check specific job status
                 job = await check_job_status(session, token, args.check_job)
                 print(f"Job Status: {job['status']}")
-                if job['outputMessage']:
+                if 'outputMessage' in job and job['outputMessage']:
                     print(f"Output: {job['outputMessage']}")
+                else:
+                    print("Output: No output message available")
                 return
             
             video_id = args.video_id
@@ -182,12 +218,14 @@ async def main():
             
             job = await check_job_status(session, token, job_id)
             print(f"Job Status: {job['status']}")
-            if job['outputMessage']:
+            if 'outputMessage' in job and job['outputMessage']:
                 print(f"Output: {job['outputMessage']}")
+            else:
+                print("Output: No output message available")
             
             if args.load_test:
                 # Run load test
-                await load_test_transcode(session, token, video_id, args.concurrency, args.requests)
+                await load_test_transcode(session, token, video_id, args.concurrency, args.requests, args.time)
             
         except Exception as e:
             print(f"Error: {e}")
