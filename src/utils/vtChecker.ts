@@ -22,9 +22,10 @@ interface VirusTotalResponse {
 }
 
 export interface VirusScanResult {
-    isMalicious: boolean;
-    maliciousCount: number;
-    totalVendors: number;
+    isMalicious: boolean,
+    scanned: boolean,
+    maliciousCount: number,
+    totalVendors: number
 }
 
 export async function checkFileWithVirusTotal(filePath: string, apiKey: string): Promise<VirusScanResult> {
@@ -44,6 +45,7 @@ export async function checkFileWithVirusTotal(filePath: string, apiKey: string):
             if (response.status === 404) {
                 return {
                     isMalicious: false,
+                    scanned: false,
                     maliciousCount: 0,
                     totalVendors: 0,
                 };
@@ -58,6 +60,7 @@ export async function checkFileWithVirusTotal(filePath: string, apiKey: string):
         const totalVendors = lastAnalysisStats.malicious + lastAnalysisStats.suspicious + lastAnalysisStats.harmless + lastAnalysisStats.undetected + lastAnalysisStats.timeout;
         return {
             isMalicious,
+            scanned: true,
             maliciousCount,
             totalVendors,
         };
@@ -66,6 +69,7 @@ export async function checkFileWithVirusTotal(filePath: string, apiKey: string):
         console.error('Error checking file with VirusTotal:', error);
         return {
             isMalicious: false,
+            scanned: false,
             maliciousCount: 0,
             totalVendors: 0
         };
