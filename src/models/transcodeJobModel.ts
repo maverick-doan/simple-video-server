@@ -50,8 +50,8 @@ export async function createTranscodeJob(params: {
 
 export async function getTranscodeJobById(id: string): Promise<TranscodeJob | undefined> {
     const q = `
-      SELECT id, video_id, status::text AS status, requested_qualities::text[] AS requested_qualities,
-             output_message, created_at, updated_at
+      SELECT id, video_id AS "videoId", status::text AS status, requested_qualities::text[] AS "requestedQualities",
+             output_message AS "outputMessage", created_at AS "createdAt", updated_at AS "updatedAt"
       FROM transcode_jobs WHERE id=$1
     `;
     const { rows } = await pool.query(q, [id]);

@@ -6,7 +6,8 @@ A TypeScript-based REST API for video transcoding, designed to test CPU-intensiv
 
 Built to explore:
 * CPU-intensive workloads in cloud environments
-* REST API design with Hono
+* Auto-scale testing and other related testing for cloud compute instances
+* REST API development with Hono - thanks to the continous non-iterating and never-ending evolution of the wonderful JS ecosystem
 
 And.. my university assignment requires a test API
 
@@ -15,10 +16,10 @@ And.. my university assignment requires a test API
 * **Runtime**: Node.js + TypeScript
 * **API Framework**: Hono (lightweight, fast)
 * **Caching**: Redis
-* **Database**: PostgreSQL (metadata, job tracking)
+* **Database**: PostgreSQL
 * **Video Processing**: ffmpeg
 * **Authentication**: JWT
-* **Deployment**: Docker + Docker Compose
+* **Deployment**: Docker + Docker Compose + Terraform
 
 These are subject to changes for improvements.
 

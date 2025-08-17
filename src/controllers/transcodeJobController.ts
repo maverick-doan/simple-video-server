@@ -8,6 +8,7 @@ import  { type Video, ALLOWED_QUALITIES, type Quality } from "../types/video";
 import * as path from 'path';
 import { env } from "../config/env";
 import * as fileUtils from '../utils/file';
+import { redisService } from "../cache/redis";
 
 export async function getTranscodeJob (c: Context<{ Variables: AppBindings }>) {
     const user = c.get('user');
@@ -18,6 +19,11 @@ export async function getTranscodeJob (c: Context<{ Variables: AppBindings }>) {
     const jobId = c.req.param('id');
     if (!jobId) {
         return c.json({ error: 'Job ID is required' }, 400);
+    }
+
+    const cacheStatus = await redisService.getJobStats(jobId);
+    if (cacheStatus) {
+        return c.json({ transcodeJob: { id: jobId, status: cacheStatus as 'pending' | 'processing' | 'completed' | 'failed' } }, 200);
     }
 
     const job = await getTranscodeJobById(jobId);
@@ -76,11 +82,13 @@ export async function requestTranscodeJob (c: Context<{ Variables: AppBindings }
         status: 'pending',
     });
 
+    await redisService.createJobStats(job.id, 'pending');
+
     setImmediate(async () => {
         try {
             await updateTranscodeJob({ id: job.id, status: 'processing' });
+            await redisService.createJobStats(job.id, 'processing');
             const inputPath = video.url;
-            console.log('inputPath', inputPath);
             const outputDir = path.join(env.uploadDir, video.ownerId, 'derived', video.id);
             await fileUtils.ensureDir(outputDir);
             const baseName = `output_${job.id}`;
@@ -91,6 +99,7 @@ export async function requestTranscodeJob (c: Context<{ Variables: AppBindings }
                 status: 'completed',
                 outputMessage: `Generated: ${outputs.map((o) => path.relative(process.cwd(), o)).join(', ')}`,
             });
+            await redisService.createJobStats(job.id, 'completed');
         } catch (e: any) {
             console.error('Transcode error:', e);
             await updateTranscodeJob({
@@ -98,6 +107,7 @@ export async function requestTranscodeJob (c: Context<{ Variables: AppBindings }
                 status: 'failed',
                 outputMessage: e?.message ?? 'Transcode failed',
             });
+            await redisService.createJobStats(job.id, 'failed');
             return c.json({ error: e?.message ?? 'Transcode failed' }, 500);
         }
       });

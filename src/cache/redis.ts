@@ -21,6 +21,15 @@ export const redisService = {
         const result = await client.exists(`blacklist:${token}`);
         return result === 1;
     },
+    async createJobStats(jobId: string, status: 'pending' | 'processing' | 'completed' | 'failed', ttl: number = 300): Promise<void> {
+        await client.setEx(`job:${jobId}`, ttl, status);
+    },
+    async getJobStats(jobId: string): Promise<string | null> {
+        return await client.get(`job:${jobId}`);
+    },
+    async deleteJobStats(jobId: string): Promise<void> {
+        await client.del(`job:${jobId}`);
+    },
     async close(): Promise<void> {
         await client.quit();
     }
