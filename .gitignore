@@ -141,3 +141,13 @@ vite.config.ts.timestamp-*
 # Production config files
 docker-compose.prod.yml
 Dockerfile.prod
+
+# Terraform files
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+.terraform*
+
+# ssh configs
+ssh/
