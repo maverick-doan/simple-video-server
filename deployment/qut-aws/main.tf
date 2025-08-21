@@ -24,6 +24,10 @@ data "aws_subnets" "qut_subnets" {
     name   = "vpc-id"
     values = [data.aws_vpc.qut_vpc.id]
   }
+  filter {
+    name   = "tag:Name"
+    values = ["*Public*"]
+  }
 }
 
 data "aws_subnet" "qut_subnet" {
