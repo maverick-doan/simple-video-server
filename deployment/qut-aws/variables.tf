@@ -47,3 +47,7 @@ variable "root_volume_size_gb" {
   type        = number
   default     = 30
 }
+
+variable "instance_profile_name" {
+  type = string
+}

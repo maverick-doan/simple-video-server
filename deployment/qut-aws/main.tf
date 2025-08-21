@@ -81,6 +81,7 @@ resource "aws_instance" "qut_instance" {
   subnet_id                   = data.aws_subnet.qut_subnet.id
   vpc_security_group_ids      = [data.aws_security_group.qut_security_group.id]
   key_name                    = aws_key_pair.ssh_key.key_name
+  iam_instance_profile        = var.instance_profile_name
   associate_public_ip_address = true
 
   root_block_device {
