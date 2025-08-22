@@ -101,7 +101,7 @@ async def is_job_running(session: aiohttp.ClientSession, token: str, job_id: str
     except:
         return False
 
-async def load_test_transcode(session: aiohttp.ClientSession, token: str, video_id: str, concurrency: int, requests: int, duration_seconds: int = None):
+async def load_test_transcode(session: aiohttp.ClientSession, token: str, video_id: str, concurrency: int, requests: int, duration_seconds: int = None, gradual_test: bool = False):
     async def submit_job():
         try:
             await request_transcode(session, token, video_id)
@@ -128,6 +128,8 @@ async def load_test_transcode(session: aiohttp.ClientSession, token: str, video_
                     print(f"Failed to spawn job: {e}")
             
             await asyncio.sleep(1)
+            if gradual_test:
+                await asyncio.sleep(5)
         print(f"Sustained load test completed: {count} jobs submitted over {duration_seconds}s")
         
     else:
@@ -165,7 +167,9 @@ async def main():
     parser.add_argument('--requests', type=int, default=REQUESTS, help='Number of requests for load test')
     parser.add_argument('--time', type=int, help='Duration in seconds for sustained load test')
     parser.add_argument('--check-job', help='Check status of specific job ID')
-    
+    parser.add_argument('--transcode-only', action='store_true', help='Only transcode, don\'t upload')
+    parser.add_argument('--gradual-test', action='store_true', help='Gradually increase the number of requests')
+
     args = parser.parse_args()
     
     async with aiohttp.ClientSession() as session:
@@ -209,23 +213,27 @@ async def main():
                 return
             
             # Request transcode
-            print("Requesting video transcoding...")
-            job_id = await request_transcode(session, token, video_id)
-            
-            # Wait a bit and check status
-            print("Waiting 5 seconds before checking job status...")
-            await asyncio.sleep(5)
-            
-            job = await check_job_status(session, token, job_id)
-            print(f"Job Status: {job['status']}")
-            if 'outputMessage' in job and job['outputMessage']:
-                print(f"Output: {job['outputMessage']}")
-            else:
-                print("Output: No output message available")
+            if args.transcode_only:
+                print("Requesting video transcoding...")
+                job_id = await request_transcode(session, token, video_id)
+                
+                # Wait a bit and check status
+                print("Waiting 5 seconds before checking job status...")
+                await asyncio.sleep(5)
+                
+                job = await check_job_status(session, token, job_id)
+                print(f"Job Status: {job['status']}")
+                if 'outputMessage' in job and job['outputMessage']:
+                    print(f"Output: {job['outputMessage']}")
+                else:
+                    print("Output: No output message available")
             
             if args.load_test:
                 # Run load test
-                await load_test_transcode(session, token, video_id, args.concurrency, args.requests, args.time)
+                if args.gradual_test:
+                    await load_test_transcode(session, token, video_id, args.concurrency, args.requests, args.time, gradual_test=True)
+                else:
+                    await load_test_transcode(session, token, video_id, args.concurrency, args.requests, args.time)
             
         except Exception as e:
             print(f"Error: {e}")
