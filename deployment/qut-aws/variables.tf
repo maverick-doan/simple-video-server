@@ -51,3 +51,22 @@ variable "root_volume_size_gb" {
 variable "instance_profile_name" {
   type = string
 }
+
+variable "ami_id" {
+  type = string
+}
+
+variable "s3_bucket_name" {
+	type        = string
+	description = "Globally-unique S3 bucket name"
+}
+
+variable "s3_enable_versioning" {
+	type        = bool
+	default     = true
+}
+
+variable "qut_purpose_tag" {
+	type        = string
+	default     = "assessment 2"
+}

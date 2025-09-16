@@ -80,7 +80,7 @@ resource "aws_key_pair" "ssh_key" {
 }
 
 resource "aws_instance" "qut_instance" {
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   subnet_id                   = data.aws_subnet.qut_subnet.id
   vpc_security_group_ids      = [data.aws_security_group.qut_security_group.id]
@@ -100,6 +100,39 @@ resource "aws_instance" "qut_instance" {
   }
 }
 
+resource "aws_s3_bucket" "qut_s3_bucket" {
+  bucket = var.s3_bucket_name
+  tags = {
+    Name           = "${var.s3_bucket_name}"
+    "qut-username" = var.qut_upn
+    purpose        = "assessment 2"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "qut_s3_bucket" {
+  bucket                  = aws_s3_bucket.qut_s3_bucket.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_versioning" "qut_s3_bucket" {
+  bucket = aws_s3_bucket.qut_s3_bucket.id
+  versioning_configuration {
+    status = var.s3_enable_versioning ? "Enabled" : "Suspended"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "qut_s3_bucket" {
+  bucket = aws_s3_bucket.qut_s3_bucket.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
 output "ec2_instance_id" {
   value = aws_instance.qut_instance.id
 }
@@ -114,4 +147,12 @@ output "ssh_command" {
 
 output "ecr_repository_url" {
   value = aws_ecr_repository.qut_ecr_repository.repository_url
+}
+
+output "s3_bucket_name" {
+  value = aws_s3_bucket.qut_s3_bucket.bucket
+}
+
+output "s3_bucket_arn" {
+  value = aws_s3_bucket.qut_s3_bucket.arn
 }
