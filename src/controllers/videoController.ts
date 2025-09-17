@@ -11,6 +11,7 @@ import type { ProbeResult, Video } from "../types/video";
 import { getVideoById, getAllVideos } from "../models/videoModel";
 import { ALLOWED_TYPES, MAX_FILE_SIZE, MAX_DURATION_SECONDS, SUPPORTED_CODECS, DEFAULT_QUALITY, ALLOWED_QUALITIES, type Quality } from "../types/video";
 import { checkFileWithVirusTotal } from "../utils/vtChecker";
+import { S3Service } from "../services/s3";
 
 export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
     const user = c.get('user');
@@ -49,17 +50,15 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
 	const safeBase = parsed.name.replace(/[^\w.-]+/g, '_');
 	const baseName = `${videoId}_${safeBase}`;
     const userUploadDir = path.join(env.uploadDir, user.sub);
-    const originalsDir = path.join(userUploadDir, 'originals');
     const tempDir = path.join(userUploadDir, 'temp');
-    
-    await fileUtils.ensureDir(originalsDir);
+
     await fileUtils.ensureDir(tempDir);
-    
-    const videoPath = path.join(originalsDir, `${baseName}.${ext}`);
+
     const tempPath = path.join(tempDir, `${baseName}.${ext}`);
 
     try {
-        await writeFile(tempPath, Buffer.from(await file.arrayBuffer()));
+        const buff = Buffer.from(await file.arrayBuffer());
+        await writeFile(tempPath, buff);
 
         // The VirusTotal external API call was implemented to satisfy the additional external API requirement
         // We now skip the scan and continue for unknown files and failed requests to avoid overcomplicating the code
@@ -116,8 +115,8 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
             }, 400);
         }
 
-        // Move temp file to final destination
-        await rename(tempPath, videoPath);
+        const s3Key = `${user.sub}/originals/${baseName}.${ext}`;
+        const fileUrl = await S3Service.uploadFile(s3Key, buff, `${ext}`);
 
         const quality = preferred.height ? `${preferred.height}p` : DEFAULT_QUALITY;
 
@@ -126,7 +125,7 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
             originalFileName: safeBase,
             title,
             description,
-            url: videoPath, // Will switch to URL in later stages
+            url: fileUrl, // TODO: Fallback option like EFS when S3 is not available?
             quality: quality as Quality,
             durationSeconds: meta.durationSeconds,
             sizeBytes: meta.sizeBytes
@@ -164,7 +163,12 @@ export async function getVideo(c: Context<{ Variables: AppBindings }>) {
         return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    return c.json({ videoData: video }, 200);
+    try {
+        const fileUrl = await S3Service.generateDownloadUrl(video.url);
+        return c.json({ videoData: video, fileUrl: fileUrl }, 200);
+    } catch (error) {
+        return c.json({ error: 'Failed to generate download URL' }, 500);
+    }
 }
 
 export async function listAllVideos(c: Context<{ Variables: AppBindings }>) {
