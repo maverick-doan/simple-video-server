@@ -10,4 +10,6 @@ export const env = {
     uploadDir: process.env.UPLOAD_DIR || './uploads',
     nodeEnv: process.env.NODE_ENV || 'production',
     virusTotalApiKey: process.env.VIRUS_TOTAL_API_KEY || '',
+    awsRegion: process.env.AWS_REGION || 'ap-southeast-2',
+    s3BucketName: process.env.S3_BUCKET_NAME || '',
 };

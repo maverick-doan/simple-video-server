@@ -1,11 +1,12 @@
 import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { env } from '../config/env';
 
 const s3Client = new S3Client({
-    region: process.env.AWS_REGION || 'ap-southeast-2',
+    region: env.awsRegion || 'ap-southeast-2',
 });
 
-const BUCKET_NAME = process.env.S3_BUCKET_NAME
+const BUCKET_NAME = env.s3BucketName
 
 export class S3Service {
     static async uploadFile(key: string, body: Buffer, contentType: string): Promise<string> {
