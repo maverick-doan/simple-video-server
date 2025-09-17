@@ -133,6 +133,18 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "qut_s3_bucket" {
   }
 }
 
+resource "aws_s3_bucket_cors_configuration" "qut_s3_bucket" {
+  bucket = aws_s3_bucket.qut_s3_bucket.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"]
+    allowed_origins = ["*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+
 output "ec2_instance_id" {
   value = aws_instance.qut_instance.id
 }
