@@ -16,5 +16,5 @@ export const env = {
     cognitoClientId: process.env.COGNITO_CLIENT_ID!,
     cognitoDomain: process.env.COGNITO_DOMAIN || '',
     cognitoClientSecret: process.env.COGNITO_CLIENT_SECRET!,
-    cognitoCallbackUrl: process.env.COGNITO_CALLBACK_URL!,
+    cognitoCallbackUrl: process.env.COGNITO_CALLBACK_URL! || "http://localhost:3000/api/auth/cognito/callback",
 };

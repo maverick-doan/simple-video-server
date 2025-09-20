@@ -15,6 +15,10 @@ provider "aws" {
   profile = var.aws_profile
 }
 
+# ------------------------------------------------
+# Data Sources
+# ------------------------------------------------
+
 data "aws_vpc" "qut_vpc" {
   id = var.qut_vpc_id
 }
@@ -57,6 +61,14 @@ data "aws_ami" "ubuntu" {
     values = ["available"]
   }
 }
+
+# ------------------------------------------------
+# Resources
+# ------------------------------------------------
+
+# AWS Cognito will not be managed by Terraform
+# This is because it's a bit too complex to manage with Terraform (need to manage users and groups).
+# There is a workaround for this by having Terraform ignore certain resources however not worth the effort at this stage.
 
 resource "aws_ecr_repository" "qut_ecr_repository" {
   name                 = "${var.qut_student_id}-ecr-repository"
@@ -144,6 +156,10 @@ resource "aws_s3_bucket_cors_configuration" "qut_s3_bucket" {
     max_age_seconds = 3000
   }
 }
+
+# ------------------------------------------------
+# Outputs
+# ------------------------------------------------
 
 output "ec2_instance_id" {
   value = aws_instance.qut_instance.id
