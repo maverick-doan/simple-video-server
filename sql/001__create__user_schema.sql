@@ -9,18 +9,23 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
+    password_hash TEXT,
+    auth_provider TEXT NOT NULL CHECK (auth_provider IN ('local', 'cognito')),
+    cognito_sub TEXT,
     role user_role NOT NULL DEFAULT 'user',
     created_at TIMESTAMPTZ NOT NULL DEFAULT get_brisbane_timestamp(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT get_brisbane_timestamp(),
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
+-- No role table, just admin and user for simplicity as this is not actual focus of this application
+
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
 CREATE INDEX IF NOT EXISTS idx_users_updated_at ON users(updated_at);
 CREATE INDEX IF NOT EXISTS idx_users_is_deleted ON users(is_deleted);
+CREATE INDEX IF NOT EXISTS idx_users_cognito_sub ON users(cognito_sub);
 
 CREATE OR REPLACE TRIGGER update_users_updated_at 
     BEFORE UPDATE ON users

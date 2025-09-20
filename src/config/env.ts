@@ -12,4 +12,9 @@ export const env = {
     virusTotalApiKey: process.env.VIRUS_TOTAL_API_KEY || '',
     awsRegion: process.env.AWS_REGION || 'ap-southeast-2',
     s3BucketName: process.env.S3_BUCKET_NAME || '',
+    cognitoUserPoolId: process.env.COGNITO_USER_POOL_ID!,
+    cognitoClientId: process.env.COGNITO_CLIENT_ID!,
+    cognitoDomain: process.env.COGNITO_DOMAIN || '',
+    cognitoClientSecret: process.env.COGNITO_CLIENT_SECRET!,
+    cognitoCallbackUrl: process.env.COGNITO_CALLBACK_URL!,
 };
