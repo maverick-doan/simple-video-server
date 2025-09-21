@@ -19,6 +19,10 @@ cognitoJwtVerifier.hydrate().catch((err) => {
 
 export async function verifyCognitoJwt(token: string): Promise<JwtUser> {
     try {
+        const isBlacklisted = await redisService.isTokenBlacklisted(token);
+        if (isBlacklisted) {
+            throw new Error('Token is blacklisted');
+        }
         const payload = await cognitoJwtVerifier.verify(token);
         return {
             sub: payload.sub,
@@ -42,7 +46,7 @@ export async function verifyJwt(token: string): Promise<JwtUser> {
     if (isBlacklisted) {
         throw new Error('Token is blacklisted');
     }
-    
+
     try {
         return jwt.verify(token, env.jwtSecret as Secret) as JwtUser;
     } catch (error) {
