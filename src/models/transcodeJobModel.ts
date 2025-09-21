@@ -33,7 +33,7 @@ export async function createTranscodeJob(params: {
 }) {
     const id = uuid();
     const q = `
-      INSERT INTO transcode_jobs (id, video_id, status, requested_qualities, output_message)
+      INSERT INTO n11562773_video_app.transcode_jobs (id, video_id, status, requested_qualities, output_message)
       VALUES ($1,$2,$3,$4,$5)
       RETURNING id, video_id AS "videoId", status::text AS status, requested_qualities::text[] AS "requestedQualities",
                 output_message AS "outputMessage", created_at AS "createdAt", updated_at AS "updatedAt"
@@ -52,7 +52,7 @@ export async function getTranscodeJobById(id: string): Promise<TranscodeJob | un
     const q = `
       SELECT id, video_id AS "videoId", status::text AS status, requested_qualities::text[] AS "requestedQualities",
              output_message AS "outputMessage", created_at AS "createdAt", updated_at AS "updatedAt"
-      FROM transcode_jobs WHERE id=$1
+      FROM n11562773_video_app.transcode_jobs WHERE id=$1
     `;
     const { rows } = await pool.query(q, [id]);
     if (!rows[0]) return undefined;
@@ -64,6 +64,6 @@ export async function updateTranscodeJob(params: {
     status: 'pending' | 'processing' | 'completed' | 'failed';
     outputMessage?: string | null;
 }): Promise<void> {
-    const q = `UPDATE transcode_jobs SET status=$2, output_message=$3 WHERE id=$1`;
+    const q = `UPDATE n11562773_video_app.transcode_jobs SET status=$2, output_message=$3 WHERE id=$1`;
     await pool.query(q, [params.id, params.status, params.outputMessage ?? null]);
 }
