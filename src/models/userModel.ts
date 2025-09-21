@@ -1,4 +1,30 @@
 import { pool } from '../db/pool';
+import { v4 as uuid } from 'uuid';
+
+export async function createUser(params: {
+        username: string;
+        email: string;
+        authProvider: 'local' | 'cognito';
+        cognitoSub?: string;
+        role: 'admin' | 'user';
+    }) {
+        const id = uuid();
+        const query = `
+        INSERT INTO n11562773_video_app.users (id, username, email, auth_provider, cognito_sub, role)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id, username, email, role, auth_provider, cognito_sub
+        `;
+        
+        const values = [id, params.username, params.email, params.authProvider, params.cognitoSub, params.role];
+        const result = await pool.query(query, values);
+        return result.rows[0];
+    }
+    
+export async function getUserByCognitoSub(cognitoSub: string) {
+    const query = `SELECT id, username, email, role, auth_provider, cognito_sub FROM n11562773_video_app.users WHERE cognito_sub = $1 AND is_deleted = FALSE`;
+    const result = await pool.query(query, [cognitoSub]);
+    return result.rows[0];
+}
 
 export async function getUserByUsernameOrEmail(identifier: string) {
     const query = `SELECT id, username, email, password_hash, role::text AS role FROM n11562773_video_app.users WHERE username = $1 OR email = $1`;
@@ -9,5 +35,5 @@ export async function getUserByUsernameOrEmail(identifier: string) {
         email: string;
         password_hash: string;
         role: 'admin' | 'user';
-    } | undefined; // Will move to a separated user type in later stage as user management is not yet in scope 
+    } | undefined; // Move to a separated user type in later stage
 }
