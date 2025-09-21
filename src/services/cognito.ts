@@ -9,6 +9,15 @@ import {
     RespondToAuthChallengeCommand,
     AssociateSoftwareTokenCommand,
     VerifySoftwareTokenCommand,
+    type AdminCreateUserCommandOutput,
+    type AdminSetUserPasswordCommandOutput,
+    type AdminAddUserToGroupCommandOutput,
+    type AdminGetUserCommandOutput,
+    type AdminListGroupsForUserCommandOutput,
+    type InitiateAuthCommandOutput,
+    type RespondToAuthChallengeCommandOutput,
+    type AssociateSoftwareTokenCommandOutput,
+    type VerifySoftwareTokenCommandOutput,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { env } from '../config/env';
 
@@ -18,7 +27,7 @@ const cognitoClient = new CognitoIdentityProviderClient({
 
 export class CognitoService {
     // Create user in Cognito
-    static async createUser(email: string, username: string, temporaryPassword: string) {
+    static async createUser(email: string, username: string, temporaryPassword: string): Promise<AdminCreateUserCommandOutput> {
         const command = new AdminCreateUserCommand({
             UserPoolId: env.cognitoUserPoolId,
             Username: username,
@@ -34,7 +43,7 @@ export class CognitoService {
     }
 
     // Set user password
-    static async setUserPassword(username: string, password: string) {
+    static async setUserPassword(username: string, password: string): Promise<AdminSetUserPasswordCommandOutput> {
         const command = new AdminSetUserPasswordCommand({
             UserPoolId: env.cognitoUserPoolId,
             Username: username,
@@ -46,7 +55,7 @@ export class CognitoService {
     }
 
     // Add user to group
-    static async addUserToGroup(username: string, groupName: string) {
+    static async addUserToGroup(username: string, groupName: string): Promise<AdminAddUserToGroupCommandOutput> {
         const command = new AdminAddUserToGroupCommand({
             UserPoolId: env.cognitoUserPoolId,
             Username: username,
@@ -57,7 +66,7 @@ export class CognitoService {
     }
 
     // Get user details
-    static async getUser(username: string) {
+    static async getUser(username: string): Promise<AdminGetUserCommandOutput> {
         const command = new AdminGetUserCommand({
             UserPoolId: env.cognitoUserPoolId,
             Username: username,
@@ -67,7 +76,7 @@ export class CognitoService {
     }
 
     // Get user groups
-    static async getUserGroups(username: string) {
+    static async getUserGroups(username: string): Promise<AdminListGroupsForUserCommandOutput> {
         const command = new AdminListGroupsForUserCommand({
             UserPoolId: env.cognitoUserPoolId,
             Username: username,
@@ -77,7 +86,7 @@ export class CognitoService {
     }
 
     // Authenticate user
-    static async authenticateUser(username: string, password: string) {
+    static async authenticateUser(username: string, password: string): Promise<InitiateAuthCommandOutput> {
         const command = new InitiateAuthCommand({
             AuthFlow: 'USER_PASSWORD_AUTH',
             ClientId: env.cognitoClientId,
@@ -92,7 +101,7 @@ export class CognitoService {
     }
 
     // Respond to MFA challenge
-    static async respondToMFAChallenge(session: string, mfaCode: string) {
+    static async respondToMFAChallenge(session: string, mfaCode: string): Promise<RespondToAuthChallengeCommandOutput> {
         const command = new RespondToAuthChallengeCommand({
             ClientId: env.cognitoClientId,
             ChallengeName: 'SOFTWARE_TOKEN_MFA',
@@ -107,7 +116,7 @@ export class CognitoService {
     }
 
     // Setup MFA for user
-    static async setupMFA(accessToken: string) {
+    static async setupMFA(accessToken: string): Promise<AssociateSoftwareTokenCommandOutput> {
         const command = new AssociateSoftwareTokenCommand({
             AccessToken: accessToken,
         });
@@ -116,7 +125,7 @@ export class CognitoService {
     }
 
     // Verify MFA setup
-    static async verifyMFA(accessToken: string, userCode: string) {
+    static async verifyMFA(accessToken: string, userCode: string): Promise<VerifySoftwareTokenCommandOutput> {
         const command = new VerifySoftwareTokenCommand({
             AccessToken: accessToken,
             UserCode: userCode,
