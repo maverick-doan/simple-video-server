@@ -13,3 +13,18 @@ export interface LoginRequest {
     username: string;
     password: string;
 }
+
+export interface CognitoLoginRequest {
+    username: string;
+    password: string;
+    mfaCode?: string;
+}
+
+export interface CognitoMFASetupRequest {
+    accessToken: string;
+}
+
+export interface CognitoMFAVerifyRequest {
+    accessToken: string;
+    userCode: string;
+}
