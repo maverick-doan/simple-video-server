@@ -42,7 +42,8 @@ export async function login(c: Context<{ Variables: AppBindings }>) {
             sub: user.id, 
             username: user.username, 
             email: user.email, 
-            role: user.role 
+            role: user.role,
+            authProvider: user.auth_provider
           });
 
         return c.json({ token }, 200);

@@ -35,5 +35,6 @@ export async function getUserByUsernameOrEmail(identifier: string) {
         email: string;
         password_hash: string;
         role: 'admin' | 'user';
+        auth_provider: 'local' | 'cognito';
     } | undefined; // Move to a separated user type in later stage
 }
