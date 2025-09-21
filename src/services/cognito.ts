@@ -148,4 +148,36 @@ export class CognitoService {
             `scope=openid+email+profile&` +
             `identity_provider=Google`;
     }
+
+   // Exchange authorisation code for tokens
+    static async exchangeCodeForTokens(code: string) {
+        const params = new URLSearchParams({
+            grant_type: 'authorization_code',
+            client_id: env.cognitoClientId,
+            client_secret: env.cognitoClientSecret,
+            code: code,
+            redirect_uri: env.cognitoCallbackUrl,
+        });
+
+        const response = await fetch(`https://${env.cognitoDomain}.auth.${env.awsRegion}.amazoncognito.com/oauth2/token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: params.toString(),
+        });
+
+        return await response.json();
+    }
+
+    // Get user info from Google token
+    static async getUserInfo(accessToken: string) {
+        const response = await fetch(`https://${env.cognitoDomain}.auth.${env.awsRegion}.amazoncognito.com/oauth2/userInfo`, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+            },
+        });
+
+        return await response.json();
+    }
 }

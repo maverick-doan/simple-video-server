@@ -70,6 +70,9 @@ data "aws_ami" "ubuntu" {
 # This is because it's a bit too complex to manage with Terraform (need to manage users and groups).
 # There is a workaround for this by having Terraform ignore certain resources however not worth the effort at this stage.
 
+# AWS RDS will not be managed by Terraform
+# QUT already has a RDS instance running and we are not allowed to create new ones, so there is no point in managing it with Terraform.
+
 resource "aws_ecr_repository" "qut_ecr_repository" {
   name                 = "${var.qut_student_id}-ecr-repository"
   image_tag_mutability = "MUTABLE"
