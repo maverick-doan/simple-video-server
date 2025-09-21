@@ -2,7 +2,7 @@
 
 BEGIN;
 
-INSERT INTO users (id, username, email, password_hash, auth_provider, role)
+INSERT INTO n11562773_video_app.users (id, username, email, password_hash, auth_provider, role)
 VALUES (
     'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     'admin',
@@ -12,7 +12,7 @@ VALUES (
     'admin'
 ) ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO users (id, username, email, password_hash, auth_provider, role)
+INSERT INTO n11562773_video_app.users (id, username, email, password_hash, auth_provider, role)
 VALUES (
     'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12',
     'user',
