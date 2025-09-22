@@ -101,17 +101,18 @@ export class CognitoService {
     }
 
     // Respond to MFA challenge
-    static async respondToMFAChallenge(session: string, mfaCode: string): Promise<RespondToAuthChallengeCommandOutput> {
+    static async respondToMFAChallenge(session: string, mfaCode: string, username: string): Promise<RespondToAuthChallengeCommandOutput> {
         const command = new RespondToAuthChallengeCommand({
             ClientId: env.cognitoClientId,
             ChallengeName: 'SOFTWARE_TOKEN_MFA',
             Session: session,
             ChallengeResponses: {
                 SOFTWARE_TOKEN_MFA_CODE: mfaCode,
-                USERNAME: '', // Will be set by the calling function
+                USERNAME: username,
+                SECRET_HASH: this.calculateSecretHash(username),
             },
         });
-
+    
         return await cognitoClient.send(command);
     }
 

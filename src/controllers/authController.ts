@@ -5,6 +5,10 @@ import { signJwt } from "../utils/jwt";
 import type { AppBindings } from "../config/app";
 import type { LoginRequest } from "../types/user";
 import { redisService } from "../cache/redis";
+import { CognitoService } from "../services/cognito";
+import { getUserByCognitoSub } from "../models/userModel";
+import { createUser } from "../models/userModel";
+import type { CognitoLoginRequest } from "../types/user";
 
 function isValidLoginRequest(body: unknown): body is LoginRequest {
     if (!body || typeof body !== 'object') return false;
@@ -17,6 +21,7 @@ function isValidLoginRequest(body: unknown): body is LoginRequest {
     );
 }
 
+// Local login handler
 export async function login(c: Context<{ Variables: AppBindings }>) {
     try {
         const body = await c.req.json();
@@ -61,6 +66,240 @@ export async function login(c: Context<{ Variables: AppBindings }>) {
     }
 }
 
+export async function cognitoLogin(c: Context<{ Variables: AppBindings }>) {
+    try {
+        const body = await c.req.json();
+        if (!isValidLoginRequest(body)) {
+            return c.json({ error: 'Invalid request body' }, 400);
+        }
+
+        const username = body.username.trim();
+        const password = body.password.trim();
+        
+        const authResult = await CognitoService.authenticateUser(username, password);
+        
+        if (authResult.ChallengeName === 'SOFTWARE_TOKEN_MFA') {
+            return c.json({
+                challenge: 'MFA_REQUIRED',
+                session: authResult.Session,
+                message: 'MFA code required'
+            }, 200);
+        }
+        
+        if (authResult.AuthenticationResult?.AccessToken) {
+            const userInfo = await CognitoService.getUserInfo(authResult.AuthenticationResult.AccessToken) as any;
+            
+            const userAttributes = userInfo.UserAttributes || [];
+            const email = userAttributes.find((attr: any) => attr.Name === 'email')?.Value || '';
+            const cognitoUsername = userAttributes.find((attr: any) => attr.Name === 'preferred_username')?.Value || 
+                                  userAttributes.find((attr: any) => attr.Name === 'sub')?.Value || '';
+            const groups = userAttributes.find((attr: any) => attr.Name === 'cognito:groups')?.Value?.split(',') || [];
+
+            let user = await getUserByCognitoSub(userInfo.Username);
+
+            if (!user) {
+                user = await createUser({
+                    username: cognitoUsername,
+                    email: email,
+                    authProvider: 'cognito',
+                    cognitoSub: userInfo.Username,
+                    role: groups.includes('Admin') ? 'admin' : 'user'
+                });
+            }
+            
+            return c.json({
+                accessToken: authResult.AuthenticationResult.AccessToken,
+                idToken: authResult.AuthenticationResult.IdToken,
+                refreshToken: authResult.AuthenticationResult.RefreshToken,
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role,
+                    authProvider: 'cognito'
+                }
+            }, 200);
+        }
+        
+        return c.json({ error: 'Authentication failed' }, 401);
+        
+    } catch (err) {
+        console.error('Cognito login error:', err);
+        return c.json({ error: 'Authentication failed' }, 401);
+    }
+}
+
+export async function cognitoMFAChallenge(c: Context<{ Variables: AppBindings }>) {
+    try {
+        const body = await c.req.json();
+        const { session, mfaCode, username } = body;
+        
+        if (!session || !mfaCode || !username) {
+            return c.json({ error: 'Missing required fields' }, 400);
+        }
+        
+        const challengeResult = await CognitoService.respondToMFAChallenge(session, mfaCode, username);
+        
+        if (challengeResult.AuthenticationResult?.AccessToken) {
+            const userInfo: any = await CognitoService.getUserInfo(challengeResult.AuthenticationResult.AccessToken);
+            
+            const userAttributes = userInfo.UserAttributes || [];
+            const email = userAttributes.find((attr: any) => attr.Name === 'email')?.Value || '';
+            const cognitoUsername = userAttributes.find((attr: any) => attr.Name === 'preferred_username')?.Value || 
+                                  userAttributes.find((attr: any) => attr.Name === 'sub')?.Value || '';
+            const groups = userAttributes.find((attr: any) => attr.Name === 'cognito:groups')?.Value?.split(',') || [];
+
+            let user = await getUserByCognitoSub(userInfo.Username);
+
+            if (!user) {
+                user = await createUser({
+                    username: cognitoUsername,
+                    email: email,
+                    authProvider: 'cognito',
+                    cognitoSub: userInfo.Username,
+                    role: groups.includes('Admin') ? 'admin' : 'user'
+                });
+            }
+            
+            return c.json({
+                accessToken: challengeResult.AuthenticationResult.AccessToken,
+                idToken: challengeResult.AuthenticationResult.IdToken,
+                refreshToken: challengeResult.AuthenticationResult.RefreshToken,
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role,
+                    authProvider: 'cognito'
+                }
+            }, 200);
+        }
+        
+        return c.json({ error: 'MFA verification failed' }, 401);
+        
+    } catch (err) {
+        console.error('MFA challenge error:', err);
+        return c.json({ error: 'MFA verification failed' }, 401);
+    }
+}
+
+// MFA setup handler
+export async function setupMFA(c: Context<{ Variables: AppBindings }>) {
+    try {
+        const user = c.get('user');
+        if (!user || user.authProvider !== 'cognito') {
+            return c.json({ error: 'Cognito user required' }, 400);
+        }
+        
+        const body = await c.req.json();
+        const { accessToken } = body;
+        
+        if (!accessToken) {
+            return c.json({ error: 'Access token required' }, 400);
+        }
+        
+        const mfaSetup = await CognitoService.setupMFA(accessToken);
+        
+        return c.json({
+            secretCode: mfaSetup.SecretCode,
+            qrCodeUrl: `otpauth://totp/VideoApp:${user.username}?secret=${mfaSetup.SecretCode}&issuer=VideoApp`
+        }, 200);
+        
+    } catch (err) {
+        console.error('MFA setup error:', err);
+        return c.json({ error: 'MFA setup failed' }, 500);
+    }
+}
+
+// Google OAuth callback handler
+export async function googleCallback(c: Context<{ Variables: AppBindings }>) {
+    try {
+        const code = c.req.query('code');
+        const state = c.req.query('state');
+        
+        if (!code) {
+            return c.json({ error: 'Authorization code not provided' }, 400);
+        }
+        
+        const tokenResponse = await CognitoService.exchangeCodeForTokens(code) as any;
+        
+        if (tokenResponse.access_token) {
+            const userInfo = await CognitoService.getUserInfo(tokenResponse.access_token) as any;
+            
+            let user = await getUserByCognitoSub(userInfo.sub);
+            
+            if (!user) {
+                user = await createUser({
+                    username: userInfo['cognito:username'] || userInfo.username || userInfo.email,
+                    email: userInfo.email,
+                    authProvider: 'cognito',
+                    cognitoSub: userInfo.sub,
+                    role: userInfo['cognito:groups']?.includes('Admin') ? 'admin' : 'user'
+                });
+            }
+            return c.json({
+                accessToken: tokenResponse.access_token,
+                idToken: tokenResponse.id_token,
+                refreshToken: tokenResponse.refresh_token,
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role,
+                    authProvider: 'cognito'
+                }
+            }, 200);
+        }
+        
+        return c.json({ error: 'Google authentication failed' }, 401);
+        
+    } catch (err) {
+        console.error('Google callback error:', err);
+        return c.json({ error: 'Google authentication failed' }, 401);
+    }
+}
+
+
+// MFA verification handler
+export async function verifyMFA(c: Context<{ Variables: AppBindings }>) {
+    try {
+        const user = c.get('user');
+        if (!user || user.authProvider !== 'cognito') {
+            return c.json({ error: 'Cognito user required' }, 400);
+        }
+        
+        const body = await c.req.json();
+        const { accessToken, userCode } = body;
+        
+        if (!accessToken || !userCode) {
+            return c.json({ error: 'Access token and user code required' }, 400);
+        }
+        
+        const mfaVerify = await CognitoService.verifyMFA(accessToken, userCode);
+        
+        return c.json({
+            status: mfaVerify.Status,
+            message: 'MFA setup completed successfully'
+        }, 200);
+        
+    } catch (err) {
+        console.error('MFA verification error:', err);
+        return c.json({ error: 'MFA verification failed' }, 500);
+    }
+}
+
+// Get Google OAuth URL
+export async function getGoogleAuthUrl(c: Context<{ Variables: AppBindings }>) {
+    try {
+        const authUrl = CognitoService.getGoogleAuthUrl();
+        return c.json({ authUrl }, 200);
+    } catch (err) {
+        console.error('Google auth URL error:', err);
+        return c.json({ error: 'Failed to generate auth URL' }, 500);
+    }
+}
+
+// Me endpoint handler: Get current authenticated user information
 export async function me(c: Context<{ Variables: AppBindings }>) {
     try {
         const user = c.get('user');
@@ -74,6 +313,7 @@ export async function me(c: Context<{ Variables: AppBindings }>) {
     }
 }
 
+// Logout endpoint handler: Logout current authenticated user
 export async function logout(c: Context<{ Variables: AppBindings }>) {
     try {
         const user = c.get('user');

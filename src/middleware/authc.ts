@@ -26,6 +26,7 @@ export async function requireAuth(c: Context<{ Variables: AppBindings }>, next: 
             // Cognito token
             jwtUser = await verifyCognitoJwt(token);
         } else if (decoded.authProvider) {
+            // Local token
             if (decoded.authProvider === 'local') {
                 jwtUser = await verifyJwt(token);
             
