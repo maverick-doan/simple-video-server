@@ -5,6 +5,8 @@ BEGIN;
 
 SET timezone = 'Australia/Brisbane';
 
+CREATE SCHEMA IF NOT EXISTS n11562773_video_app;
+
 CREATE OR REPLACE FUNCTION n11562773_video_app.get_brisbane_timestamp()
 RETURNS TIMESTAMPTZ AS $$
 BEGIN
@@ -19,8 +21,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ language 'plpgsql';
-
-CREATE SCHEMA IF NOT EXISTS n11562773_video_app;
 
 COMMIT;
 

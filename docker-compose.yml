@@ -41,6 +41,12 @@ services:
       JWT_SECRET: dev-super-secret-muhahahahahahahhahahahahahaha-haha-hhhhhaaaaa
       UPLOAD_DIR: /app/uploads
       NODE_ENV: development
+      SHARED_DB_HOST: database-1-instance-1.ce2haupt2cta.ap-southeast-2.rds.amazonaws.com
+      SHARED_DB_PORT: 5432
+      SHARED_DB_NAME: cohort_2025
+      SHARED_DB_USER: s109
+      SHARED_DB_PASSWORD: qQyAkIZz2TmV
+      SHARED_DB_SSL: "true"
     ports:
       - "3000:3000"
     volumes:
