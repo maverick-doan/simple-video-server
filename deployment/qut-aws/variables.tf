@@ -70,3 +70,24 @@ variable "qut_purpose_tag" {
 	type        = string
 	default     = "assessment 2"
 }
+
+variable "cognito_identity_provider_count" {
+  type = number
+  default = 1
+}
+
+variable "google_client_id" {
+  type = string
+}
+
+variable "google_client_secret" {
+  type = string
+}
+
+variable "cognito_callback_url" {
+  type = string
+}
+
+variable "cognito_logout_url" {
+  type = string
+}
