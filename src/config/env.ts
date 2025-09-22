@@ -23,4 +23,12 @@ export const env = {
     cognitoClientSecret: process.env.COGNITO_CLIENT_SECRET || '',
     cognitoDomain: process.env.COGNITO_DOMAIN || '',
     cognitoCallbackUrl: process.env.COGNITO_CALLBACK_URL || 'http://localhost:3000/api/auth/cognito/google/callback',
+
+    // Shared DB Configuration
+    sharedDbHost: process.env.SHARED_DB_HOST || 'database-1-instance-1.ce2haupt2cta.ap-southeast-2.rds.amazonaws.com',
+    sharedDbPort: parseInt(process.env.SHARED_DB_PORT || '5432'),
+    sharedDbName: process.env.SHARED_DB_NAME || 'cohort_2025',
+    sharedDbUser: process.env.SHARED_DB_USER || '',
+    sharedDbPassword: process.env.SHARED_DB_PASSWORD || '',
+    sharedDbSsl: process.env.SHARED_DB_SSL === 'true' || true,
 };

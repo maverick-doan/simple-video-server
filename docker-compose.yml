@@ -38,9 +38,15 @@ services:
       PORT: 3000
       DATABASE_URL: postgres://superman:secret_to_your_heart@postgres:5432/video_app_db
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: dev-super-secret-muhahahahahahahhahahahahahaha-haha-hhhhhaaaaa
+      JWT_SECRET: mocktoken
       UPLOAD_DIR: /app/uploads
       NODE_ENV: development
+      SHARED_DB_HOST: database-1-instance-1.ce2haupt2cta.ap-southeast-2.rds.amazonaws.com
+      SHARED_DB_PORT: 5432
+      SHARED_DB_NAME: cohort_2025
+      SHARED_DB_USER: mockuser
+      SHARED_DB_PASSWORD: mockpassword
+      SHARED_DB_SSL: "true"
     ports:
       - "3000:3000"
     volumes:
