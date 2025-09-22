@@ -3,6 +3,8 @@ import {
     login, 
     me, 
     logout,
+    cognitoRegister,
+    cognitoConfirm,
     cognitoLogin,
     cognitoMFAChallenge,
     getGoogleAuthUrl,
@@ -23,6 +25,8 @@ authRouter.post('/logout', requireAuth, logout);
 // Cognito auth
 authRouter.post('/cognito/login', cognitoLogin);
 authRouter.post('/cognito/mfa-challenge', cognitoMFAChallenge);
+authRouter.post('/cognito/register', cognitoRegister);
+authRouter.post('/cognito/confirm', cognitoConfirm);
 
 // Federated (Google)
 authRouter.get('/cognito/google/url', getGoogleAuthUrl);

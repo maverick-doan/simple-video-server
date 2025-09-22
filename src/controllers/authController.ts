@@ -8,7 +8,6 @@ import { redisService } from "../cache/redis";
 import { CognitoService } from "../services/cognito";
 import { getUserByCognitoSub } from "../models/userModel";
 import { createUser } from "../models/userModel";
-import type { CognitoLoginRequest } from "../types/user";
 
 export async function cognitoRegister(c: Context<{ Variables: AppBindings }>) {
 	const body = await c.req.json();
