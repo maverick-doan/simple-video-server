@@ -38,3 +38,29 @@ export async function getUserByUsernameOrEmail(identifier: string) {
         auth_provider: 'local' | 'cognito';
     } | undefined; // Move to a separated user type in later stage
 }
+
+export async function getUserByEmail(email: string) {
+    const query = `SELECT id, username, email, role::text AS role, auth_provider, cognito_sub FROM n11562773_video_app.users WHERE email = $1 AND is_deleted = FALSE`;
+    const result = await pool.query(query, [email]);
+    return result.rows[0] as {
+        id: string;
+        username: string;
+        email: string;
+        role: 'admin' | 'user';
+        auth_provider: 'local' | 'cognito';
+        cognito_sub?: string | null;
+    } | undefined;
+}
+
+export async function getUserByUsername(username: string) {
+    const query = `SELECT id, username, email, role::text AS role, auth_provider, cognito_sub FROM n11562773_video_app.users WHERE username = $1 AND is_deleted = FALSE`;
+    const result = await pool.query(query, [username]);
+    return result.rows[0] as {
+        id: string;
+        username: string;
+        email: string;
+        role: 'admin' | 'user';
+        auth_provider: 'local' | 'cognito';
+        cognito_sub?: string | null;
+    } | undefined;
+}

@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { getUserByUsernameOrEmail } from "../models/userModel";
+import { getUserByUsernameOrEmail, getUserByEmail, getUserByUsername } from "../models/userModel";
 import * as bcrypt from 'bcrypt';
 import { signJwt } from "../utils/jwt";
 import type { AppBindings } from "../config/app";
@@ -9,6 +9,27 @@ import { CognitoService } from "../services/cognito";
 import { getUserByCognitoSub } from "../models/userModel";
 import { createUser } from "../models/userModel";
 import type { CognitoLoginRequest } from "../types/user";
+
+export async function cognitoRegister(c: Context<{ Variables: AppBindings }>) {
+	const body = await c.req.json();
+	const { username, email, password } = body || {};
+	if (!username || !email || !password) return c.json({ error: 'username, email, password required' }, 400);
+    const userByEmail = await getUserByEmail(email);
+    if (userByEmail) return c.json({ error: 'Email already exists' }, 400);
+    const userByUsername = await getUserByUsername(username);
+    if (userByUsername) return c.json({ error: 'Username already exists' }, 400);
+	await CognitoService.signUp(username, password, email);
+	return c.json({ message: 'Registration submitted. Check your email for the confirmation code.' }, 200);
+}
+
+export async function cognitoConfirm(c: Context<{ Variables: AppBindings }>) {
+	const body = await c.req.json();
+	const { username, code } = body || {};
+	if (!username || !code) return c.json({ error: 'username and code required' }, 400);
+
+	await CognitoService.confirmSignUp(username, code);
+	return c.json({ message: 'Email confirmed. You can now login.' }, 200);
+}
 
 function isValidLoginRequest(body: unknown): body is LoginRequest {
     if (!body || typeof body !== 'object') return false;
