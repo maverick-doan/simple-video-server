@@ -9,6 +9,8 @@ import {
     RespondToAuthChallengeCommand,
     AssociateSoftwareTokenCommand,
     VerifySoftwareTokenCommand,
+    SignUpCommand,
+    ConfirmSignUpCommand,
     type AdminCreateUserCommandOutput,
     type AdminSetUserPasswordCommandOutput,
     type AdminAddUserToGroupCommandOutput,
@@ -26,6 +28,31 @@ const cognitoClient = new CognitoIdentityProviderClient({
 });
 
 export class CognitoService {
+    // Self sign-up
+    static async signUp(username: string, password: string, email: string) {
+        const cmd = new SignUpCommand({
+            ClientId: env.cognitoClientId,
+            SecretHash: this.calculateSecretHash(username),
+            Username: username,
+            Password: password,
+            UserAttributes: [
+                { Name: 'email', Value: email },
+            ],
+        });
+        return cognitoClient.send(cmd);
+    }
+
+    // Confirm sign-up with code sent to email
+    static async confirmSignUp(username: string, code: string) {
+        const cmd = new ConfirmSignUpCommand({
+            ClientId: env.cognitoClientId,
+            SecretHash: this.calculateSecretHash(username),
+            Username: username,
+            ConfirmationCode: code,
+        });
+        return cognitoClient.send(cmd);
+    }
+
     // Create user in Cognito
     static async createUser(email: string, username: string, temporaryPassword: string): Promise<AdminCreateUserCommandOutput> {
         const command = new AdminCreateUserCommand({
