@@ -3,8 +3,8 @@
 -- UP Migration
 BEGIN;
 
-CREATE TYPE n11562773_video_app.user_role AS ENUM ('admin', 'user');
-CREATE TYPE n11562773_video_app.auth_provider AS ENUM ('local', 'cognito');
+CREATE TYPE IF NOT EXISTS n11562773_video_app.user_role AS ENUM ('admin', 'user');
+CREATE TYPE IF NOT EXISTS n11562773_video_app.auth_provider AS ENUM ('local', 'cognito');
 
 CREATE TABLE IF NOT EXISTS n11562773_video_app.users (
     id UUID PRIMARY KEY,
