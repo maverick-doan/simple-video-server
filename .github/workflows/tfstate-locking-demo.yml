@@ -1,0 +1,48 @@
+name: Terraform Deploy
+
+on:
+  push:
+    branches: [ test/tf-backend ]
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_REGION: 'ap-southeast-2'
+  TF_BACKEND_BUCKET: 'cab432-n11562773-tfsate-storage'
+  TF_BACKEND_DYNAMODB: 'n11562773-tfstate-backend'
+
+jobs:
+  terraform-deploy:
+    name: 'Terraform Deploy'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Init
+      working-directory: ./deployment/qut-aws
+      run: |
+        terraform init \
+          -backend-config="bucket=${{ env.TF_BACKEND_BUCKET }}" \
+          -backend-config="key=terraform.tfstate" \
+          -backend-config="region=${{ env.AWS_REGION }}" \
+          -backend-config="dynamodb_table=${{ env.TF_BACKEND_DYNAMODB }}"
+
+    - name: Terraform Plan
+      working-directory: ./deployment/qut-aws
+      run: terraform plan -var-file=variables.tfvars
+
+    - name: Terraform Apply
+      working-directory: ./deployment/qut-aws
+      run: terraform apply -auto-approve
