@@ -47,7 +47,7 @@ export async function createVideo(params: {
 }): Promise<Video> {
     const id = params.id ?? uuid();
     const q = `
-        INSERT INTO n11562773_video_app.videos (id, owner_id, original_file_name, title, description, url, quality, duration_seconds, size_bytes)
+        INSERT INTO s901.videos (id, owner_id, original_file_name, title, description, url, quality, duration_seconds, size_bytes)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
         RETURNING *
     `;
@@ -66,7 +66,7 @@ export async function createVideo(params: {
 }
 
 export async function getVideoById(id: string): Promise<Video | undefined> {
-    const q = `SELECT * FROM n11562773_video_app.videos WHERE id=$1 AND is_deleted=FALSE`;
+    const q = `SELECT * FROM s901.videos WHERE id=$1 AND is_deleted=FALSE`;
     const { rows } = await pool.query<DbVideoRow>(q, [id]);
     return rows[0] ? toVideo(rows[0]) : undefined;
 }
@@ -77,7 +77,7 @@ export async function getAllVideos(params: { limit: number, offset: number, owne
   const ownerId = params.ownerId;
   const whereClause = ownerId ? `AND owner_id='${ownerId}'` : '';
   const q = `
-    SELECT * FROM n11562773_video_app.videos
+    SELECT * FROM s901.videos
     WHERE is_deleted=FALSE
     ${whereClause}
     ORDER BY created_at DESC

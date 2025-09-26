@@ -10,7 +10,7 @@ export async function createUser(params: {
     }) {
         const id = uuid();
         const query = `
-        INSERT INTO n11562773_video_app.users (id, username, email, auth_provider, cognito_sub, role)
+        INSERT INTO s901.users (id, username, email, auth_provider, cognito_sub, role)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, username, email, role, auth_provider, cognito_sub
         `;
@@ -21,13 +21,13 @@ export async function createUser(params: {
     }
     
 export async function getUserByCognitoSub(cognitoSub: string) {
-    const query = `SELECT id, username, email, role, auth_provider, cognito_sub FROM n11562773_video_app.users WHERE cognito_sub = $1 AND is_deleted = FALSE`;
+    const query = `SELECT id, username, email, role, auth_provider, cognito_sub FROM s901.users WHERE cognito_sub = $1 AND is_deleted = FALSE`;
     const result = await pool.query(query, [cognitoSub]);
     return result.rows[0];
 }
 
 export async function getUserByUsernameOrEmail(identifier: string) {
-    const query = `SELECT id, username, email, password_hash, role::text AS role FROM n11562773_video_app.users WHERE username = $1 OR email = $1`;
+    const query = `SELECT id, username, email, password_hash, role::text AS role FROM s901.users WHERE username = $1 OR email = $1`;
     const result = await pool.query(query, [identifier]);
     return result.rows[0] as {
         id: string;
@@ -40,7 +40,7 @@ export async function getUserByUsernameOrEmail(identifier: string) {
 }
 
 export async function getUserByEmail(email: string) {
-    const query = `SELECT id, username, email, role::text AS role, auth_provider, cognito_sub FROM n11562773_video_app.users WHERE email = $1 AND is_deleted = FALSE`;
+    const query = `SELECT id, username, email, role::text AS role, auth_provider, cognito_sub FROM s901.users WHERE email = $1 AND is_deleted = FALSE`;
     const result = await pool.query(query, [email]);
     return result.rows[0] as {
         id: string;
@@ -53,7 +53,7 @@ export async function getUserByEmail(email: string) {
 }
 
 export async function getUserByUsername(username: string) {
-    const query = `SELECT id, username, email, role::text AS role, auth_provider, cognito_sub FROM n11562773_video_app.users WHERE username = $1 AND is_deleted = FALSE`;
+    const query = `SELECT id, username, email, role::text AS role, auth_provider, cognito_sub FROM s901.users WHERE username = $1 AND is_deleted = FALSE`;
     const result = await pool.query(query, [username]);
     return result.rows[0] as {
         id: string;
