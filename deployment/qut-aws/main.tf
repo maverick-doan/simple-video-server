@@ -8,11 +8,18 @@ terraform {
       version = "~> 5.0"
     }
   }
+  backend "s3" {
+    bucket = "cab432-n11562773-tfsate-storage"
+    key = "terraform.tfstate"
+    region = "ap-southeast-2"
+    profile = "mav-qut-sso"
+    dynamodb_table = "n11562773-tfstate-backend"
+  }
 }
 
 provider "aws" {
-  region  = var.aws_region
-  profile = var.aws_profile
+  region  = "ap-southeast-2"
+  profile = "mav-qut-sso"
 }
 
 # ------------------------------------------------
