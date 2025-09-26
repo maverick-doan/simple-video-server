@@ -116,7 +116,7 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
         }
 
         const s3Key = `${user.sub}/originals/${baseName}.${ext}`;
-        const fileUrl = await S3Service.uploadFile(s3Key, buff, `${ext}`);
+        await S3Service.uploadFile(s3Key, buff, `${ext}`);
 
         const quality = preferred.height ? `${preferred.height}p` : DEFAULT_QUALITY;
 
@@ -125,7 +125,7 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
             originalFileName: safeBase,
             title,
             description,
-            url: fileUrl, // TODO: Fallback option like EFS when S3 is not available?
+            url: s3Key, // TODO: Fallback option like EFS when S3 is not available?
             quality: quality as Quality,
             durationSeconds: meta.durationSeconds,
             sizeBytes: meta.sizeBytes

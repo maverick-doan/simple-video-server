@@ -9,6 +9,8 @@ import * as path from 'path';
 import { env } from "../config/env";
 import * as fileUtils from '../utils/file';
 import { redisService } from "../cache/redis";
+import { S3Service } from "../services/s3";
+import { writeFile, readFile, unlink } from 'fs/promises';
 
 export async function getTranscodeJob (c: Context<{ Variables: AppBindings }>) {
     const user = c.get('user');
@@ -84,22 +86,51 @@ export async function requestTranscodeJob (c: Context<{ Variables: AppBindings }
 
     await redisService.createJobStats(job.id, 'pending');
 
+    // TODO: Refactor this to use a queue system instead of setImmediate
+    // Have a service running that will pick up jobs and allow only one job to be processed at a time per instance
     setImmediate(async () => {
         try {
             await updateTranscodeJob({ id: job.id, status: 'processing' });
             await redisService.createJobStats(job.id, 'processing');
-            const inputPath = video.url;
+
+            // Prepare temp workspace
+            const userTempDir = path.join(env.uploadDir, video.ownerId, 'temp', job.id);
             const outputDir = path.join(env.uploadDir, video.ownerId, 'derived', video.id);
+            await fileUtils.ensureDir(userTempDir);
             await fileUtils.ensureDir(outputDir);
+
+            // Download original from S3 to temp file
+            // video.url stores the S3 key (e.g. "<ownerId>/originals/<name>.ext")
+            const originalKey = video.url;
+            const inputExt = path.extname(originalKey) || '.mp4';
+            const tempInputPath = path.join(userTempDir, `input_${video.id}${inputExt}`);
+            const s3Buff = await S3Service.getFile(originalKey);
+            await writeFile(tempInputPath, s3Buff);
+
+            // Transcode from the temp input to local outputDir
             const baseName = `output_${job.id}`;
-            const { outputs } = await transcodeMultipleQualities(path.resolve(inputPath), outputDir, qualities, baseName);
-        
+            const { outputs } = await transcodeMultipleQualities(path.resolve(tempInputPath), outputDir, qualities, baseName);
+
+            // Upload each derived file back to S3 under "<ownerId>/derived/<videoId>/..."
+            const uploadedKeys: string[] = [];
+            for (const outPath of outputs) {
+                const key = `${video.ownerId}/derived/${video.id}/${path.basename(outPath)}`;
+                const fileBuf = await readFile(outPath);
+                const contentType = path.extname(outPath).toLowerCase() === '.mp4' ? 'video/mp4' : 'application/octet-stream';
+                await S3Service.uploadFile(key, fileBuf, contentType);
+                uploadedKeys.push(key);
+            }
+
+            // Mark job completed and cache status
             await updateTranscodeJob({
                 id: job.id,
                 status: 'completed',
-                outputMessage: `Generated: ${outputs.map((o) => path.relative(process.cwd(), o)).join(', ')}`,
+                outputMessage: `Generated S3 objects: ${uploadedKeys.join(', ')}`,
             });
             await redisService.createJobStats(job.id, 'completed');
+
+            // Best-effort cleanup (ignore failures)
+            try { await unlink(tempInputPath); } catch {}
         } catch (e: any) {
             console.error('Transcode error:', e);
             await updateTranscodeJob({
@@ -111,6 +142,6 @@ export async function requestTranscodeJob (c: Context<{ Variables: AppBindings }
             return c.json({ error: e?.message ?? 'Transcode failed' }, 500);
         }
       });
-    
+
     return c.json({ jobId: job.id }, 202);
 }
