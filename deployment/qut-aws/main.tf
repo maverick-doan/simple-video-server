@@ -107,6 +107,7 @@ resource "aws_instance" "qut_instance" {
   tags = {
     Name           = "${var.qut_student_id}-video-app-ec2"
     "qut-username" = var.qut_upn
+    "qut-username2" = var.qut_upn2
     purpose        = "assessment 1"
   }
 }
@@ -222,7 +223,7 @@ resource "aws_cognito_user_pool_client" "qut_cognito_user_pool_client" {
   allowed_oauth_scopes = ["openid", "email", "profile"]
   callback_urls = [var.cognito_callback_url]
   logout_urls = [var.cognito_logout_url]
-  supported_identity_providers = ["Google", "Cognito"]
+  supported_identity_providers = ["Google", "COGNITO"]
   depends_on = [aws_cognito_user_pool_domain.qut_cognito_user_pool_domain]
 }
 
@@ -266,4 +267,12 @@ output "s3_bucket_name" {
 
 output "s3_bucket_arn" {
   value = aws_s3_bucket.qut_s3_bucket.arn
+}
+
+output "cognito_user_pool_id" {
+  value = aws_cognito_user_pool.qut_cognito_user_pool.id
+}
+
+output "cognito_user_pool_domain" {
+  value = aws_cognito_user_pool_domain.qut_cognito_user_pool_domain.domain
 }

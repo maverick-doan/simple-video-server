@@ -12,6 +12,10 @@ variable "qut_upn" {
   type = string
 }
 
+variable "qut_upn2" {
+  type = string
+}
+
 variable "qut_student_id" {
   type = string
 }
