@@ -146,7 +146,8 @@ Dockerfile.prod
 *.tfstate
 *.tfstate.backup
 .terraform/
-*.tfvars
+deployment/qut-aws/variables.tfvars
+deployment/qut-aws/output.tfvars
 .terraform*
 
 # ssh configs
