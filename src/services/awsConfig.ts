@@ -115,11 +115,13 @@ export class AWSConfigService {
             const [
                 jwtSecret,
                 cognitoClientSecret,
-                sharedDbPassword
+                sharedDbPassword,
+                virusTotalApiKey
             ] = await Promise.all([
                 this.getSecret('JWT_SECRET'),
                 this.getSecret('COGNITO_CLIENT_SECRET'),
-                this.getSecret('SHARED_DB_PASSWORD')
+                this.getSecret('SHARED_DB_PASSWORD'),
+                this.getSecret('VIRUS_TOTAL_API_KEY')
             ]);
 
             const config = {
@@ -127,7 +129,7 @@ export class AWSConfigService {
                 port: parseInt(process.env.PORT || '3000', 10),
                 uploadDir: process.env.UPLOAD_DIR || './uploads',
                 nodeEnv: process.env.NODE_ENV || 'production',
-                virusTotalApiKey: process.env.VIRUS_TOTAL_API_KEY || '',
+                virusTotalApiKey: virusTotalApiKey,
                 
                 // AWS Configuration
                 awsRegion: awsRegion,
