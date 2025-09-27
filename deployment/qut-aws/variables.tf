@@ -61,22 +61,22 @@ variable "ami_id" {
 }
 
 variable "s3_bucket_name" {
-	type        = string
-	description = "Globally-unique S3 bucket name"
+  type        = string
+  description = "Globally-unique S3 bucket name"
 }
 
 variable "s3_enable_versioning" {
-	type        = bool
-	default     = true
+  type    = bool
+  default = true
 }
 
 variable "qut_purpose_tag" {
-	type        = string
-	default     = "assessment 2"
+  type    = string
+  default = "assessment 2"
 }
 
 variable "cognito_identity_provider_count" {
-  type = number
+  type    = number
   default = 1
 }
 
@@ -94,4 +94,20 @@ variable "cognito_callback_url" {
 
 variable "cognito_logout_url" {
   type = string
+}
+
+variable "cognito_email_sending_account" {
+  description = "Cognito email sending account type"
+  type        = string
+  default     = "DEVELOPER"
+}
+
+variable "cognito_from_email_address" {
+  description = "Cognito from email address"
+  type        = string
+}
+
+variable "cognito_ses_source_arn" {
+  description = "SES source ARN for Cognito email sending"
+  type        = string
 }

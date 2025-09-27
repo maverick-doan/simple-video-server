@@ -9,10 +9,10 @@ terraform {
     }
   }
   backend "s3" {
-    bucket = "cab432-n11562773-tfsate-storage"
-    key = "terraform.tfstate"
-    region = "ap-southeast-2"
-    profile = "mav-qut-sso"
+    bucket         = "cab432-n11562773-tfsate-storage"
+    key            = "terraform.tfstate"
+    region         = "ap-southeast-2"
+    profile        = "mav-qut-sso"
     dynamodb_table = "n11562773-tfstate-backend"
   }
 }
@@ -112,10 +112,10 @@ resource "aws_instance" "qut_instance" {
   }
 
   tags = {
-    Name           = "${var.qut_student_id}-video-app-ec2"
-    "qut-username" = var.qut_upn
+    Name            = "${var.qut_student_id}-video-app-ec2"
+    "qut-username"  = var.qut_upn
     "qut-username2" = var.qut_upn2
-    purpose        = "assessment 1"
+    purpose         = "assessment 1"
   }
 }
 
@@ -165,19 +165,19 @@ resource "aws_s3_bucket_cors_configuration" "qut_s3_bucket" {
 }
 
 resource "aws_cognito_user_pool" "qut_cognito_user_pool" {
-  name = "${var.qut_student_id}-video-app-user-pool"
-  username_attributes = ["email"]
+  name                     = "${var.qut_student_id}-video-app-user-pool"
+  username_attributes      = ["email"]
   auto_verified_attributes = ["email"]
-  mfa_configuration = "ON"
+  mfa_configuration        = "ON"
 
   software_token_mfa_configuration {
     enabled = true
   }
 
   password_policy {
-    minimum_length = 12
-    require_numbers = true
-    require_symbols = true
+    minimum_length    = 12
+    require_numbers   = true
+    require_symbols   = true
     require_uppercase = true
     require_lowercase = true
   }
@@ -186,66 +186,72 @@ resource "aws_cognito_user_pool" "qut_cognito_user_pool" {
     allow_admin_create_user_only = false
   }
 
+  email_configuration {
+    email_sending_account  = var.cognito_email_sending_account
+    from_email_address     = var.cognito_from_email_address
+    source_arn             = var.cognito_ses_source_arn
+  }
+
   tags = {
-    Name = "${var.qut_student_id}-video-app-user-pool"
+    Name           = "${var.qut_student_id}-video-app-user-pool"
     "qut-username" = var.qut_upn
-    purpose = "assessment 2"
+    purpose        = "assessment 2"
   }
 }
 
 resource "aws_cognito_user_pool_domain" "qut_cognito_user_pool_domain" {
   user_pool_id = aws_cognito_user_pool.qut_cognito_user_pool.id
-  domain = "${var.qut_student_id}-video-app-user-pool-domain"
+  domain       = "${var.qut_student_id}-video-app-user-pool-domain"
 }
 
 resource "aws_cognito_identity_provider" "qut_cognito_identity_provider" {
-  count = var.cognito_identity_provider_count
-  user_pool_id = aws_cognito_user_pool.qut_cognito_user_pool.id
+  count         = var.cognito_identity_provider_count
+  user_pool_id  = aws_cognito_user_pool.qut_cognito_user_pool.id
   provider_name = "Google"
   provider_type = "Google"
   provider_details = {
-    client_id = var.google_client_id
-    client_secret = var.google_client_secret
+    client_id        = var.google_client_id
+    client_secret    = var.google_client_secret
     authorize_scopes = "openid email profile"
-    authorize_url = "https://accounts.google.com/o/oauth2/v2/auth"
-    token_url = "https://www.googleapis.com/oauth2/v4/token"
-    attributes_url = "https://www.googleapis.com/oauth2/v2/userinfo"
-    oidc_issuer = "https://accounts.google.com"
+    authorize_url    = "https://accounts.google.com/o/oauth2/v2/auth"
+    token_url        = "https://www.googleapis.com/oauth2/v4/token"
+    attributes_url   = "https://www.googleapis.com/oauth2/v2/userinfo"
+    oidc_issuer      = "https://accounts.google.com"
   }
   attribute_mapping = {
-    email = "email"
+    email    = "email"
     username = "sub"
   }
 }
 
 resource "aws_cognito_user_pool_client" "qut_cognito_user_pool_client" {
-  name = "${var.qut_student_id}-video-app-user-pool-client"
-  user_pool_id = aws_cognito_user_pool.qut_cognito_user_pool.id
-  generate_secret = true
-  prevent_user_existence_errors = "ENABLED"
-  enable_token_revocation = true
-  explicit_auth_flows = ["ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_CUSTOM_AUTH"]
+  name                                 = "${var.qut_student_id}-video-app-user-pool-client"
+  user_pool_id                         = aws_cognito_user_pool.qut_cognito_user_pool.id
+  generate_secret                      = true
+  prevent_user_existence_errors        = "ENABLED"
+  enable_token_revocation              = true
+  explicit_auth_flows                  = ["ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_CUSTOM_AUTH"]
   allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_flows = ["code"]
-  allowed_oauth_scopes = ["openid", "email", "profile"]
-  callback_urls = [var.cognito_callback_url]
-  logout_urls = [var.cognito_logout_url]
-  supported_identity_providers = ["Google", "COGNITO"]
-  depends_on = [aws_cognito_user_pool_domain.qut_cognito_user_pool_domain]
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["openid", "email", "profile"]
+  callback_urls                        = [var.cognito_callback_url]
+  logout_urls                          = [var.cognito_logout_url]
+  supported_identity_providers         = ["Google", "COGNITO"]
+  depends_on                           = [aws_cognito_user_pool_domain.qut_cognito_user_pool_domain]
 }
 
 resource "aws_cognito_user_group" "admin" {
-  name = "Admin"
+  name         = "Admin"
   user_pool_id = aws_cognito_user_pool.qut_cognito_user_pool.id
-  description = "Admin group"
-  precedence = 1
+  description  = "Admin group"
+  precedence   = 1
 }
 
 resource "aws_cognito_user_group" "user" {
-  name = "User"
+  name         = "User"
   user_pool_id = aws_cognito_user_pool.qut_cognito_user_pool.id
-  description = "User group"
-  precedence = 2
+  description  = "User group"
+  precedence   = 2
 }
 
 # ------------------------------------------------
