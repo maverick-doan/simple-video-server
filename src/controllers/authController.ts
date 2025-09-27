@@ -107,22 +107,23 @@ export async function cognitoLogin(c: Context<{ Variables: AppBindings }>) {
         }
         
         if (authResult.AuthenticationResult?.AccessToken) {
-            const userInfo = await CognitoService.getUserInfo(authResult.AuthenticationResult.AccessToken) as any;
+            const userInfo = await CognitoService.getUser(username) as any;
             
             const userAttributes = userInfo.UserAttributes || [];
             const email = userAttributes.find((attr: any) => attr.Name === 'email')?.Value || '';
             const cognitoUsername = userAttributes.find((attr: any) => attr.Name === 'preferred_username')?.Value || 
                                   userAttributes.find((attr: any) => attr.Name === 'sub')?.Value || '';
             const groups = userAttributes.find((attr: any) => attr.Name === 'cognito:groups')?.Value?.split(',') || [];
+            const cognitoSub = userAttributes.find((attr: any) => attr.Name === 'sub')?.Value || '';
 
-            let user = await getUserByCognitoSub(userInfo.Username);
+            let user = await getUserByCognitoSub(cognitoSub);
 
             if (!user) {
                 user = await createUser({
                     username: cognitoUsername,
                     email: email,
                     authProvider: 'cognito',
-                    cognitoSub: userInfo.Username,
+                    cognitoSub: cognitoSub,
                     role: groups.includes('Admin') ? 'admin' : 'user'
                 });
             }

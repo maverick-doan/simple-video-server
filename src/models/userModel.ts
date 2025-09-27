@@ -21,7 +21,7 @@ export async function createUser(params: {
     }
     
 export async function getUserByCognitoSub(cognitoSub: string) {
-    const query = `SELECT id, username, email, role, auth_provider, cognito_sub FROM s109.users WHERE cognito_sub = $1 AND is_deleted = FALSE`;
+    const query = `SELECT id, username, email, role, auth_provider, cognito_sub FROM s109.users WHERE cognito_sub = $1`;
     const result = await pool.query(query, [cognitoSub]);
     return result.rows[0];
 }
