@@ -159,8 +159,8 @@ export async function cognitoMFAChallenge(c: Context<{ Variables: AppBindings }>
         
         const challengeResult = await CognitoService.respondToMFAChallenge(session, mfaCode, username);
         
-        if (challengeResult.AuthenticationResult?.AccessToken) {
-            const userInfo: any = await CognitoService.getUserInfo(challengeResult.AuthenticationResult.AccessToken);
+        if (challengeResult.AuthenticationResult?.IdToken) {
+            const userInfo: any = await CognitoService.getUserInfo(challengeResult.AuthenticationResult.IdToken);
             
             const cognitoSub = userInfo.sub;
             const email = userInfo.email;
