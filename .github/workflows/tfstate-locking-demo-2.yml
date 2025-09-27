@@ -1,4 +1,4 @@
-name: Terraform Deploy
+name: Terraform Deploy - Demo 2
 
 on:
   push:
@@ -40,4 +40,13 @@ jobs:
 
     - name: Terraform Apply
       working-directory: ./deployment/qut-aws-tfstate-demo
-      run: terraform apply -auto-approve -var-file=variables-2.tfvars
+      run: |
+        sleep 10
+        terraform apply -auto-approve -var-file=variables-2.tfvars
+
+    - name: Show Results
+      working-directory: ./deployment/qut-aws-tfstate-demo
+      run: |
+        echo "Demo 2 completed successfully (with 10 seconds delay)!"
+        echo "Bucket tags:"
+        terraform output bucket_tags
