@@ -97,7 +97,7 @@ export async function cognitoLogin(c: Context<{ Variables: AppBindings }>) {
         const password = body.password.trim();
         
         const authResult = await CognitoService.authenticateUser(username, password);
-        console.log('🔐 Cognito auth result:', authResult);
+        console.log('Cognito auth result:', authResult);
         if (authResult.ChallengeName === 'SOFTWARE_TOKEN_MFA') {
             return c.json({
                 challenge: 'MFA_REQUIRED',
@@ -240,9 +240,9 @@ export async function googleCallback(c: Context<{ Variables: AppBindings }>) {
         }
         
         const tokenResponse = await CognitoService.exchangeCodeForTokens(code) as any;
-        
-        if (tokenResponse.access_token) {
-            const userInfo = await CognitoService.getUserInfo(tokenResponse.access_token) as any;
+        console.log('Google token response:', tokenResponse);
+        if (tokenResponse.id_token) {
+            const userInfo = await CognitoService.getUserInfo(tokenResponse.id_token) as any;
             
             let user = await getUserByCognitoSub(userInfo.sub);
             
@@ -295,6 +295,8 @@ export async function verifyMFA(c: Context<{ Variables: AppBindings }>) {
         
         const mfaVerify = await CognitoService.verifyMFA(accessToken, userCode);
         
+        await CognitoService.setUserMFAPreference(accessToken, 'SOFTWARE_TOKEN_MFA');
+
         return c.json({
             status: mfaVerify.Status,
             message: 'MFA setup completed successfully'

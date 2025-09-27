@@ -11,6 +11,8 @@ import {
     VerifySoftwareTokenCommand,
     SignUpCommand,
     ConfirmSignUpCommand,
+    SetUserMFAPreferenceCommand,
+    GetUserCommand,
     type AdminCreateUserCommandOutput,
     type AdminSetUserPasswordCommandOutput,
     type AdminAddUserToGroupCommandOutput,
@@ -20,6 +22,8 @@ import {
     type RespondToAuthChallengeCommandOutput,
     type AssociateSoftwareTokenCommandOutput,
     type VerifySoftwareTokenCommandOutput,
+    type SetUserMFAPreferenceCommandOutput,
+    type GetUserCommandOutput,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { env } from '../config/env';
 import { createHmac } from 'crypto';
@@ -239,5 +243,24 @@ export class CognitoService {
             console.error('Error decoding token:', error);
             throw new Error('Failed to decode token');
         }
+    }
+
+    static async setUserMFAPreference(accessToken: string, mfaPreference: string): Promise<SetUserMFAPreferenceCommandOutput> {
+        const command = new SetUserMFAPreferenceCommand({
+            AccessToken: accessToken,
+            SMSMfaSettings: mfaPreference === 'SMS' ? { Enabled: true, PreferredMfa: true } : undefined,
+            SoftwareTokenMfaSettings: mfaPreference === 'SOFTWARE_TOKEN_MFA' ? { Enabled: true, PreferredMfa: true } : undefined,
+        });
+
+        return await cognitoClient.send(command);
+    }
+
+    // Get user MFA preferences
+    static async getUserMFAPreference(accessToken: string) {
+        const command = new GetUserCommand({
+            AccessToken: accessToken,
+        });
+
+        return await cognitoClient.send(command);
     }
 }
