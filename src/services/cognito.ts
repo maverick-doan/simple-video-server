@@ -38,7 +38,8 @@ export class CognitoService {
             Username: username,
             Password: password,
             UserAttributes: [
-                { Name: 'email', Value: email },
+                { Name: 'email', Value: String(email) },
+                { Name: 'username', Value: String(username) },
             ],
         });
         return cognitoClient.send(cmd);
