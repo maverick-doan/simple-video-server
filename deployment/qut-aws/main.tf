@@ -168,7 +168,7 @@ resource "aws_cognito_user_pool" "qut_cognito_user_pool" {
   name                     = "${var.qut_student_id}-video-app-user-pool"
   username_attributes      = ["email"]
   auto_verified_attributes = ["email"]
-  mfa_configuration        = "ON"
+  mfa_configuration        = "OPTIONAL"
 
   software_token_mfa_configuration {
     enabled = true
@@ -195,6 +195,7 @@ resource "aws_cognito_user_pool" "qut_cognito_user_pool" {
   tags = {
     Name           = "${var.qut_student_id}-video-app-user-pool"
     "qut-username" = var.qut_upn
+    "qut-username2" = var.qut_upn2
     purpose        = "assessment 2"
   }
 }
@@ -230,7 +231,7 @@ resource "aws_cognito_user_pool_client" "qut_cognito_user_pool_client" {
   generate_secret                      = true
   prevent_user_existence_errors        = "ENABLED"
   enable_token_revocation              = true
-  explicit_auth_flows                  = ["ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_CUSTOM_AUTH"]
+  explicit_auth_flows                  = ["ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_CUSTOM_AUTH", "ALLOW_USER_PASSWORD_AUTH"]
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_scopes                 = ["openid", "email", "profile"]
@@ -238,6 +239,11 @@ resource "aws_cognito_user_pool_client" "qut_cognito_user_pool_client" {
   logout_urls                          = [var.cognito_logout_url]
   supported_identity_providers         = ["Google", "COGNITO"]
   depends_on                           = [aws_cognito_user_pool_domain.qut_cognito_user_pool_domain]
+  token_validity_units {
+    refresh_token = "days"
+    access_token  = "minutes"
+    id_token      = "minutes"
+  }
 }
 
 resource "aws_cognito_user_group" "admin" {
