@@ -22,6 +22,7 @@ import {
     type VerifySoftwareTokenCommandOutput,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { env } from '../config/env';
+import { createHmac } from 'crypto';
 
 const cognitoClient = new CognitoIdentityProviderClient({
     region: env.awsRegion || 'ap-southeast-2',
@@ -165,9 +166,10 @@ export class CognitoService {
 
     // Calculate secret hash for Cognito
     private static calculateSecretHash(username: string): string {
-        const crypto = require('crypto');
-        return crypto
-            .createHmac('SHA256', env.cognitoClientSecret)
+        if (!env.cognitoClientSecret || !env.cognitoClientId) {
+            throw new Error('Cognito client configuration missing');
+        }
+        return createHmac('SHA256', env.cognitoClientSecret)
             .update(username + env.cognitoClientId)
             .digest('base64');
     }

@@ -1,34 +1,57 @@
 import { config } from 'dotenv';
+import {
+    port,
+    dbUrl,
+    redisUrl,
+    jwtSecret,
+    uploadDir,
+    nodeEnv,
+    virusTotalApiKey,
+    awsRegion,
+    s3BucketName,
+    s3Region,
+    cognitoUserPoolId,
+    cognitoClientId,
+    cognitoClientSecret,
+    cognitoDomain,
+    cognitoCallbackUrl,
+    sharedDbHost,
+    sharedDbPort,
+    sharedDbName,
+    sharedDbUser,
+    sharedDbPassword,
+    sharedDbSsl
+} from '../services/awsConfig';
 
 config();
 
 export const env = {
-    port: parseInt(process.env.PORT || '3000', 10),
-    dbUrl: process.env.DATABASE_URL!,
-    redisUrl: process.env.REDIS_URL!,
-    jwtSecret: process.env.JWT_SECRET!,
-    uploadDir: process.env.UPLOAD_DIR || './uploads',
-    nodeEnv: process.env.NODE_ENV || 'production',
-    virusTotalApiKey: process.env.VIRUS_TOTAL_API_KEY || '',
+    port,
+    dbUrl,
+    redisUrl,
+    jwtSecret,
+    uploadDir,
+    nodeEnv,
+    virusTotalApiKey,
     // AWS Configuration
-    awsRegion: process.env.AWS_REGION || 'ap-southeast-2',
+    awsRegion,
     
     // S3 Configuration
-    s3BucketName: process.env.S3_BUCKET_NAME || '',
-    s3Region: process.env.S3_REGION || 'ap-southeast-2',
+    s3BucketName,
+    s3Region,
     
     // Cognito Configuration
-    cognitoUserPoolId: process.env.COGNITO_USER_POOL_ID || '',
-    cognitoClientId: process.env.COGNITO_CLIENT_ID || '',
-    cognitoClientSecret: process.env.COGNITO_CLIENT_SECRET || '',
-    cognitoDomain: process.env.COGNITO_DOMAIN || '',
-    cognitoCallbackUrl: process.env.COGNITO_CALLBACK_URL || 'http://localhost:3000/api/auth/cognito/google/callback',
+    cognitoUserPoolId,
+    cognitoClientId,
+    cognitoClientSecret,
+    cognitoDomain,
+    cognitoCallbackUrl,
 
     // Shared DB Configuration
-    sharedDbHost: process.env.SHARED_DB_HOST || 'database-1-instance-1.ce2haupt2cta.ap-southeast-2.rds.amazonaws.com',
-    sharedDbPort: parseInt(process.env.SHARED_DB_PORT || '5432'),
-    sharedDbName: process.env.SHARED_DB_NAME || 'cohort_2025',
-    sharedDbUser: process.env.SHARED_DB_USER || '',
-    sharedDbPassword: process.env.SHARED_DB_PASSWORD || '',
-    sharedDbSsl: process.env.SHARED_DB_SSL === 'true' || true,
+    sharedDbHost,
+    sharedDbPort,
+    sharedDbName,
+    sharedDbUser,
+    sharedDbPassword,
+    sharedDbSsl
 };
