@@ -115,6 +115,13 @@ export class CognitoService {
 
     // Authenticate user
     static async authenticateUser(username: string, password: string): Promise<InitiateAuthCommandOutput> {
+        console.log('🔐 Cognito authenticateUser called with:', { username, passwordLength: password.length });
+        console.log('🔧 Cognito config:', { 
+            clientId: env.cognitoClientId, 
+            userPoolId: env.cognitoUserPoolId,
+            region: env.awsRegion 
+        });
+
         const command = new InitiateAuthCommand({
             AuthFlow: 'USER_PASSWORD_AUTH',
             ClientId: env.cognitoClientId,
@@ -125,7 +132,18 @@ export class CognitoService {
             },
         });
 
-        return await cognitoClient.send(command);
+        try {
+            const result = await cognitoClient.send(command);
+            console.log('✅ Cognito auth result:', { 
+                challengeName: result.ChallengeName,
+                hasAccessToken: !!result.AuthenticationResult?.AccessToken,
+                hasSession: !!result.Session
+            });
+            return result;
+        } catch (error) {
+            console.error('❌ Cognito auth error:', error);
+            throw error;
+        }
     }
 
     // Respond to MFA challenge

@@ -89,13 +89,17 @@ export async function login(c: Context<{ Variables: AppBindings }>) {
 export async function cognitoLogin(c: Context<{ Variables: AppBindings }>) {
     try {
         const body = await c.req.json();
+        console.log('🔐 Cognito login request body:', { username: body.username, hasPassword: !!body.password });
+        
         if (!isValidLoginRequest(body)) {
+            console.log('❌ Invalid login request body');
             return c.json({ error: 'Invalid request body' }, 400);
         }
 
         const username = body.username.trim();
         const password = body.password.trim();
         
+        console.log('🔐 Attempting Cognito authentication for:', username);
         const authResult = await CognitoService.authenticateUser(username, password);
         
         if (authResult.ChallengeName === 'SOFTWARE_TOKEN_MFA') {
@@ -144,7 +148,12 @@ export async function cognitoLogin(c: Context<{ Variables: AppBindings }>) {
         return c.json({ error: 'Authentication failed' }, 401);
         
     } catch (err) {
-        console.error('Cognito login error:', err);
+        console.error('❌ Cognito login error:', err);
+        console.error('❌ Error details:', {
+            name: err instanceof Error ? err.name : 'Unknown',
+            message: err instanceof Error ? err.message : 'Unknown error',
+            stack: err instanceof Error ? err.stack : 'No stack trace'
+        });
         return c.json({ error: 'Authentication failed' }, 401);
     }
 }
