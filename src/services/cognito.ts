@@ -181,17 +181,8 @@ export class CognitoService {
     }
 
     // Get Google OAuth URL
-    static getGoogleAuthUrl(): string {
-        const domain = env.cognitoDomain;
-        const clientId = env.cognitoClientId;
-        const redirectUri = `${env.cognitoCallbackUrl}`;
-        
-        return `https://${env.cognitoDomain}.auth.${env.awsRegion}.amazoncognito.com/oauth2/authorize?` +
-            `response_type=code&` +
-            `client_id=${clientId}&` +
-            `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-            `scope=openid+email+profile&` +
-            `identity_provider=Google`;
+    static getGoogleAuthUrl(): string {        
+        return `https://n11562773-video-app-user-pool-domain.auth.ap-southeast-2.amazoncognito.com/login?client_id=51ta09h9be6k2m9eaudqqs4nve&response_type=code&scope=email+openid+profile&redirect_uri=https%3A%2F%2Fn11562773.cab432.com%3A3000%2Fapi%2Fauth%2Fcognito%2Fgoogle%2Fcallback`;
     }
 
    // Exchange authorisation code for tokens
