@@ -66,7 +66,7 @@ export async function login(c: Context<{ Variables: AppBindings }>) {
         const token = signJwt({ 
             sub: user.id, 
             username: user.username, 
-            email: user.email, 
+            email: user.username, 
             role: user.role,
             authProvider: user.auth_provider
           });
@@ -106,8 +106,8 @@ export async function cognitoLogin(c: Context<{ Variables: AppBindings }>) {
             }, 200);
         }
         
-        if (authResult.AuthenticationResult?.AccessToken) {
-            const userInfo = await CognitoService.getUserInfo(authResult.AuthenticationResult.AccessToken) as any;
+        if (authResult.AuthenticationResult?.IdToken) {
+            const userInfo = await CognitoService.getUserInfo(authResult.AuthenticationResult.IdToken) as any;
             console.log('Cognito user info:', userInfo);
             const cognitoSub = userInfo.sub;
             const email = userInfo.email;
