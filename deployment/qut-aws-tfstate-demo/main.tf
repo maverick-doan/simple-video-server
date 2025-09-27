@@ -10,14 +10,12 @@ terraform {
     bucket = "cab432-n11562773-tfsate-storage-demo"
     key = "terraform.tfstate"
     region = "ap-southeast-2"
-    profile = "mav-qut-sso"
     dynamodb_table = "n11562773-tfstate-backend-demo"
   }
 }
 
 provider "aws" {
   region  = "ap-southeast-2"
-  profile = "mav-qut-sso"
 }
 
 # Simple S3 bucket for demo
