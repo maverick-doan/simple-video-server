@@ -97,7 +97,7 @@ export async function cognitoLogin(c: Context<{ Variables: AppBindings }>) {
         const password = body.password.trim();
         
         const authResult = await CognitoService.authenticateUser(username, password);
-        
+        console.log('🔐 Cognito auth result:', authResult);
         if (authResult.ChallengeName === 'SOFTWARE_TOKEN_MFA') {
             return c.json({
                 challenge: 'MFA_REQUIRED',
@@ -107,14 +107,12 @@ export async function cognitoLogin(c: Context<{ Variables: AppBindings }>) {
         }
         
         if (authResult.AuthenticationResult?.AccessToken) {
-            const userInfo = await CognitoService.getUser(username) as any;
-            
-            const userAttributes = userInfo.UserAttributes || [];
-            const email = userAttributes.find((attr: any) => attr.Name === 'email')?.Value || '';
-            const cognitoUsername = userAttributes.find((attr: any) => attr.Name === 'preferred_username')?.Value || 
-                                  userAttributes.find((attr: any) => attr.Name === 'sub')?.Value || '';
-            const groups = userAttributes.find((attr: any) => attr.Name === 'cognito:groups')?.Value?.split(',') || [];
-            const cognitoSub = userAttributes.find((attr: any) => attr.Name === 'sub')?.Value || '';
+            const userInfo = await CognitoService.getUserInfo(authResult.AuthenticationResult.AccessToken) as any;
+            console.log('Cognito user info:', userInfo);
+            const cognitoSub = userInfo.sub;
+            const email = userInfo.email;
+            const cognitoUsername = userInfo['cognito:username'] || userInfo.username;
+            const groups = userInfo['cognito:groups'] || [];
 
             let user = await getUserByCognitoSub(cognitoSub);
 
@@ -164,20 +162,19 @@ export async function cognitoMFAChallenge(c: Context<{ Variables: AppBindings }>
         if (challengeResult.AuthenticationResult?.AccessToken) {
             const userInfo: any = await CognitoService.getUserInfo(challengeResult.AuthenticationResult.AccessToken);
             
-            const userAttributes = userInfo.UserAttributes || [];
-            const email = userAttributes.find((attr: any) => attr.Name === 'email')?.Value || '';
-            const cognitoUsername = userAttributes.find((attr: any) => attr.Name === 'preferred_username')?.Value || 
-                                  userAttributes.find((attr: any) => attr.Name === 'sub')?.Value || '';
-            const groups = userAttributes.find((attr: any) => attr.Name === 'cognito:groups')?.Value?.split(',') || [];
+            const cognitoSub = userInfo.sub;
+            const email = userInfo.email;
+            const cognitoUsername = userInfo['cognito:username'] || userInfo.username;
+            const groups = userInfo['cognito:groups'] || [];
 
-            let user = await getUserByCognitoSub(userInfo.Username);
+            let user = await getUserByCognitoSub(cognitoSub);
 
             if (!user) {
                 user = await createUser({
                     username: cognitoUsername,
                     email: email,
                     authProvider: 'cognito',
-                    cognitoSub: userInfo.Username,
+                    cognitoSub: cognitoSub,
                     role: groups.includes('Admin') ? 'admin' : 'user'
                 });
             }

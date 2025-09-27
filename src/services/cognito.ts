@@ -23,6 +23,7 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { env } from '../config/env';
 import { createHmac } from 'crypto';
+import jwt from 'jsonwebtoken';
 
 const cognitoClient = new CognitoIdentityProviderClient({
     region: env.awsRegion || 'ap-southeast-2',
@@ -209,14 +210,33 @@ export class CognitoService {
         return await response.json();
     }
 
-    // Get user info from Google token
+    // Get user info from token
     static async getUserInfo(accessToken: string) {
-        const response = await fetch(`https://${env.cognitoDomain}.auth.${env.awsRegion}.amazoncognito.com/oauth2/userInfo`, {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-            },
-        });
-
-        return await response.json();
+        try {
+            // Decode the JWT token without verification (we'll verify in middleware)
+            const decoded = jwt.decode(accessToken) as any;
+            
+            if (!decoded) {
+                throw new Error('Invalid token format');
+            }
+            
+            // Extract user information from the decoded token
+            return {
+                sub: decoded.sub,
+                username: decoded.username || decoded['cognito:username'],
+                email: decoded.email,
+                'cognito:username': decoded['cognito:username'] || decoded.username,
+                'cognito:groups': decoded['cognito:groups'] || [],
+                UserAttributes: [
+                    { Name: 'email', Value: decoded.email },
+                    { Name: 'preferred_username', Value: decoded['cognito:username'] || decoded.username },
+                    { Name: 'sub', Value: decoded.sub },
+                    { Name: 'cognito:groups', Value: decoded['cognito:groups']?.join(',') || '' }
+                ]
+            };
+        } catch (error) {
+            console.error('Error decoding token:', error);
+            throw new Error('Failed to decode token');
+        }
     }
 }
