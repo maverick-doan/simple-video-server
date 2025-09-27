@@ -93,6 +93,7 @@ export class AWSConfigService {
                 sharedDbHost,
                 sharedDbName,
                 sharedDbPort,
+                sharedDbUser,
                 sharedDbSsl
             ] = await Promise.all([
                 this.getParameter('COGNITO_CLIENT_ID'),
@@ -106,6 +107,7 @@ export class AWSConfigService {
                 this.getParameter('SHARED_DB_HOST'),
                 this.getParameter('SHARED_DB_NAME'),
                 this.getParameter('SHARED_DB_PORT'),
+                this.getParameter('SHARED_DB_USER'),
                 this.getParameter('SHARED_DB_SSL')
             ]);
 
@@ -150,7 +152,7 @@ export class AWSConfigService {
                 sharedDbHost: sharedDbHost,
                 sharedDbPort: parseInt(sharedDbPort),
                 sharedDbName: sharedDbName,
-                sharedDbUser: process.env.SHARED_DB_USER || '',
+                sharedDbUser: sharedDbUser,
                 sharedDbPassword: sharedDbPassword,
                 sharedDbSsl: sharedDbSsl === 'true' || true,
             };
@@ -162,6 +164,7 @@ export class AWSConfigService {
             throw error;
         }
     }
+
     static clearCache(): void {
         parameterCache = {};
         secretsCache = {};
