@@ -1,22 +1,5 @@
 version: '3.9'
 services:
-  postgres:
-    image: postgres:17
-    container_name: video-app-postgres
-    environment:
-      POSTGRES_USER: superman
-      POSTGRES_PASSWORD: secret_to_your_heart
-      POSTGRES_DB: video_app_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./sql:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD", "pg_isready -U superman"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
   redis:
     image: redis:7
     container_name: video-app-redis
@@ -27,17 +10,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-  api: 
-    image: video-app-api
-    build: .
+  api:
+    image: 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com/n11562773-ecr-repository:latesta2
     container_name: video-app-api
     depends_on:
-      - postgres
       - redis
     environment:
       PORT: 3000
       UPLOAD_DIR: /app/uploads
       NODE_ENV: production
+      REDIS_URL: redis://redis:6379
     ports:
       - "3000:3000"
     volumes:
