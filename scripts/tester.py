@@ -5,7 +5,7 @@ import time
 import argparse
 import sys
 
-BASE_URL = os.getenv("API_URL", "http://localhost:3000")
+BASE_URL = os.getenv("API_URL", "http://n11562773.cab432.com:3000")
 USER = os.getenv("API_USER", "admin")
 PASSWORD = os.getenv("API_USER_PASSWORD", "admin123")
 CONCURRENCY = int(os.getenv("CONCURRENCY", "4"))
