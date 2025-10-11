@@ -94,7 +94,8 @@ export class AWSConfigService {
                 sharedDbName,
                 sharedDbPort,
                 sharedDbUser,
-                sharedDbSsl
+                sharedDbSsl,
+                transcodingQueueUrl
             ] = await Promise.all([
                 this.getParameter('COGNITO_CLIENT_ID'),
                 this.getParameter('COGNITO_DOMAIN'),
@@ -108,7 +109,8 @@ export class AWSConfigService {
                 this.getParameter('SHARED_DB_NAME'),
                 this.getParameter('SHARED_DB_PORT'),
                 this.getParameter('SHARED_DB_USER'),
-                this.getParameter('SHARED_DB_SSL')
+                this.getParameter('SHARED_DB_SSL'),
+                this.getParameter('TRANSCODING_QUEUE_URL')
             ]);
 
             // Get all secrets in parallel
@@ -157,6 +159,9 @@ export class AWSConfigService {
                 sharedDbUser: sharedDbUser,
                 sharedDbPassword: sharedDbPassword,
                 sharedDbSsl: sharedDbSsl === 'true' || true,
+
+                // SQS Configuration
+                transcodingQueueUrl: transcodingQueueUrl
             };
 
             console.log('AWS configuration loaded successfully');
@@ -197,5 +202,6 @@ export const {
     sharedDbName,
     sharedDbUser,
     sharedDbPassword,
-    sharedDbSsl
+    sharedDbSsl,
+    transcodingQueueUrl
 } = config;

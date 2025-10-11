@@ -20,7 +20,8 @@ import {
     sharedDbName,
     sharedDbUser,
     sharedDbPassword,
-    sharedDbSsl
+    sharedDbSsl,
+    transcodingQueueUrl
 } from '../services/awsConfig';
 
 config();
@@ -53,5 +54,8 @@ export const env = {
     sharedDbName,
     sharedDbUser,
     sharedDbPassword,
-    sharedDbSsl
+    sharedDbSsl,
+
+    // Transcoding Queue Configuration
+    transcodingQueueUrl
 };
