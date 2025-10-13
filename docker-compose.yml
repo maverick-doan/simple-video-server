@@ -10,20 +10,44 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   api:
     image: 901444280953.dkr.ecr.ap-southeast-2.amazonaws.com/n11562773-ecr-repository:latesta2
     container_name: video-app-api
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     environment:
       PORT: 3000
       UPLOAD_DIR: /app/uploads
       NODE_ENV: production
       REDIS_URL: redis://redis:6379
+      TRANSCODING_QUEUE_URL: ${TRANSCODING_QUEUE_URL}
     ports:
       - "3000:3000"
     volumes:
       - ./uploads:/app/uploads
+
+  transcoding-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: video-app-transcoding-worker
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      UPLOAD_DIR: /app/uploads
+      REDIS_URL: redis://redis:6379
+      TRANSCODING_QUEUE_URL: ${TRANSCODING_QUEUE_URL}
+      AWS_REGION: ${AWS_REGION}
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+
 volumes:
   pgdata:
   uploads:

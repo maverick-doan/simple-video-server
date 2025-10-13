@@ -38,8 +38,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:worker": "tsx watch src/workers/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "start:worker": "node dist/workers/index.js",
     "migrate": "tsx src/db/migrate.ts"
   }
 }

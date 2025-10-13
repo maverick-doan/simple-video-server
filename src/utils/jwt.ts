@@ -8,7 +8,7 @@ import { CognitoJwtVerifier } from 'aws-jwt-verify';
 // Create Cognito JWT verifier (should be created once and reused)
 const cognitoJwtVerifier = CognitoJwtVerifier.create({
     userPoolId: env.cognitoUserPoolId,
-    tokenUse: "access", // or "id" depending on your use case
+    tokenUse: "access", 
     clientId: env.cognitoClientId,
 });
 
@@ -23,7 +23,7 @@ export async function verifyCognitoJwt(token: string): Promise<JwtUser> {
         if (isBlacklisted) {
             throw new Error('Token is blacklisted');
         }
-        const payload = await cognitoJwtVerifier.verify(token);
+        const payload = await cognitoJwtVerifier.verify(token, { clientId: env.cognitoClientId });
         return {
             sub: payload.sub,
             username: payload['cognito:username'] as string || payload.username as string || payload.email as string,
