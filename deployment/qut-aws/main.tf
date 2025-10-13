@@ -187,16 +187,16 @@ resource "aws_cognito_user_pool" "qut_cognito_user_pool" {
   }
 
   email_configuration {
-    email_sending_account  = var.cognito_email_sending_account
-    from_email_address     = var.cognito_from_email_address
-    source_arn             = var.cognito_ses_source_arn
+    email_sending_account = var.cognito_email_sending_account
+    from_email_address    = var.cognito_from_email_address
+    source_arn            = var.cognito_ses_source_arn
   }
 
   tags = {
-    Name           = "${var.qut_student_id}-video-app-user-pool"
-    "qut-username" = var.qut_upn
+    Name            = "${var.qut_student_id}-video-app-user-pool"
+    "qut-username"  = var.qut_upn
     "qut-username2" = var.qut_upn2
-    purpose        = "assessment 2"
+    purpose         = "assessment 2"
   }
 }
 
@@ -260,6 +260,39 @@ resource "aws_cognito_user_group" "user" {
   precedence   = 2
 }
 
+# Dead Letter Queue for failed transcoding jobs
+resource "aws_sqs_queue" "transcoding_dlq" {
+  name                      = "${var.qut_student_id}-transcoding-dlq"
+  message_retention_seconds = 1209600
+
+  tags = {
+    Name            = "${var.qut_student_id}-transcoding-dlq"
+    "qut-username"  = var.qut_upn
+    "qut-username2" = var.qut_upn2
+    purpose         = "assessment 3"
+  }
+}
+
+# Main transcoding queue with DLQ configuration
+resource "aws_sqs_queue" "transcoding_queue" {
+  name                       = "${var.qut_student_id}-transcoding-queue"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = 1209600 # 14 days
+  receive_wait_time_seconds  = 20
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.transcoding_dlq.arn
+    maxReceiveCount     = 3
+  })
+
+  tags = {
+    Name            = "${var.qut_student_id}-transcoding-queue"
+    "qut-username"  = var.qut_upn
+    "qut-username2" = var.qut_upn2
+    purpose         = "assessment 3"
+  }
+}
+
 # ------------------------------------------------
 # Outputs
 # ------------------------------------------------
@@ -294,4 +327,20 @@ output "cognito_user_pool_id" {
 
 output "cognito_user_pool_domain" {
   value = aws_cognito_user_pool_domain.qut_cognito_user_pool_domain.domain
+}
+
+output "transcoding_queue_url" {
+  value = aws_sqs_queue.transcoding_queue.url
+}
+
+output "transcoding_queue_arn" {
+  value = aws_sqs_queue.transcoding_queue.arn
+}
+
+output "transcoding_dlq_url" {
+  value = aws_sqs_queue.transcoding_dlq.url
+}
+
+output "transcoding_dlq_arn" {
+  value = aws_sqs_queue.transcoding_dlq.arn
 }
