@@ -95,7 +95,8 @@ export class AWSConfigService {
                 sharedDbPort,
                 sharedDbUser,
                 sharedDbSsl,
-                transcodingQueueUrl
+                transcodingQueueUrl,
+                externalApiUrl
             ] = await Promise.all([
                 this.getParameter('COGNITO_CLIENT_ID'),
                 this.getParameter('COGNITO_DOMAIN'),
@@ -110,7 +111,8 @@ export class AWSConfigService {
                 this.getParameter('SHARED_DB_PORT'),
                 this.getParameter('SHARED_DB_USER'),
                 this.getParameter('SHARED_DB_SSL'),
-                this.getParameter('TRANSCODING_QUEUE_URL')
+                this.getParameter('TRANSCODING_QUEUE_URL'),
+                this.getParameter('EXTERNAL_API_URL')
             ]);
 
             // Get all secrets in parallel
@@ -161,7 +163,10 @@ export class AWSConfigService {
                 sharedDbSsl: sharedDbSsl === 'true' || true,
 
                 // SQS Configuration
-                transcodingQueueUrl: transcodingQueueUrl
+                transcodingQueueUrl: transcodingQueueUrl,
+
+                // External API Configuration
+                externalApiUrl: externalApiUrl || 'http://localhost:3001'
             };
 
             console.log('AWS configuration loaded successfully');
@@ -203,5 +208,6 @@ export const {
     sharedDbUser,
     sharedDbPassword,
     sharedDbSsl,
-    transcodingQueueUrl
+    transcodingQueueUrl,
+    externalApiUrl
 } = config;

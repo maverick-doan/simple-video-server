@@ -10,7 +10,7 @@ import * as fileUtils from "../utils/file";
 import type { ProbeResult, Video } from "../types/video";
 import { getVideoById, getAllVideos } from "../models/videoModel";
 import { ALLOWED_TYPES, MAX_FILE_SIZE, MAX_DURATION_SECONDS, SUPPORTED_CODECS, DEFAULT_QUALITY, ALLOWED_QUALITIES, type Quality } from "../types/video";
-import { checkFileWithVirusTotal } from "../utils/vtChecker";
+import { ExternalApiClient } from "../services/externalApiClient";
 import { S3Service } from "../services/s3";
 
 export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
@@ -60,27 +60,23 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
         const buff = Buffer.from(await file.arrayBuffer());
         await writeFile(tempPath, buff);
 
-        // The VirusTotal external API call was implemented to satisfy the additional external API requirement
-        // We now skip the scan and continue for unknown files and failed requests to avoid overcomplicating the code
-        // Therefore, only known malicious files are rejected
-        if (env.virusTotalApiKey) {
-            const virusScanResult = await checkFileWithVirusTotal(tempPath, env.virusTotalApiKey);
-            
-            if (virusScanResult.isMalicious && virusScanResult.scanned) {
-                await unlink(tempPath);
-                return c.json({
-                    error: 'File rejected: Potential security threat detected',
-                    maliciousCount: virusScanResult.maliciousCount,
-                    totalVendors: virusScanResult.totalVendors
-                }, 400);
-            }
-            
-            if (!virusScanResult.scanned) {
-                console.log('VirusTotal Scan Failed. Skipping..');
-            }
-            console.log('VirusTotal Scan Passed.');
+        // The VirusTotal external API call is now handled by the external API service
+        // This provides better separation of concerns and allows for scaling external API calls independently
+        const virusScanResult = await ExternalApiClient.scanFileWithVirusTotal(buff, `${baseName}.${ext}`);
+        
+        if (virusScanResult.isMalicious && virusScanResult.scanned) {
+            await unlink(tempPath);
+            return c.json({
+                error: 'File rejected: Potential security threat detected',
+                maliciousCount: virusScanResult.maliciousCount,
+                totalVendors: virusScanResult.totalVendors
+            }, 400);
+        }
+        
+        if (!virusScanResult.scanned) {
+            console.log('VirusTotal Scan Failed. Skipping..');
         } else {
-            console.log('VirusTotal API key not configured - skipping virus scan');
+            console.log('VirusTotal Scan Passed.');
         }
 
         const meta: ProbeResult = await probe(tempPath);

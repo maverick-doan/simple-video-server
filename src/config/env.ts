@@ -21,7 +21,8 @@ import {
     sharedDbUser,
     sharedDbPassword,
     sharedDbSsl,
-    transcodingQueueUrl
+    transcodingQueueUrl,
+    externalApiUrl
 } from '../services/awsConfig';
 
 config();
@@ -57,5 +58,8 @@ export const env = {
     sharedDbSsl,
 
     // Transcoding Queue Configuration
-    transcodingQueueUrl
+    transcodingQueueUrl,
+
+    // External API Configuration
+    externalApiUrl
 };
