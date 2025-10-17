@@ -33,17 +33,25 @@ app.get("/health", (c) => {
 
 // VirusTotal scan endpoint
 app.post("/scan/virustotal", async (c) => {
+    const requestId = Date.now();
+    console.log(`[ExternalAPI:${requestId}] VirusTotal scan request received`);
+    
     try {
         const form = await c.req.parseBody();
         const file = form.file as File;
         const fileName = form.fileName as string || 'unknown';
 
+        console.log(`[ExternalAPI:${requestId}] File name: ${fileName}`);
+        console.log(`[ExternalAPI:${requestId}] File size: ${file?.size || 0} bytes`);
+
         if (!file) {
+            console.error(`[ExternalAPI:${requestId}] No file provided in request`);
             return c.json({ error: 'No file provided' }, 400);
         }
 
         if (!env.virusTotalApiKey) {
-            console.log('VirusTotal API key not configured - returning safe result');
+            console.warn(`[ExternalAPI:${requestId}] VirusTotal API key not configured`);
+            console.warn(`[ExternalAPI:${requestId}] Returning safe result by default`);
             return c.json({ 
                 scanned: false,
                 isMalicious: false,
@@ -54,23 +62,32 @@ app.post("/scan/virustotal", async (c) => {
             });
         }
 
+        console.log(`[ExternalAPI:${requestId}] API key configured: ${env.virusTotalApiKey.substring(0, 8)}...`);
+
         // Create temporary file
         const tempDir = '/tmp';
-        const tempPath = path.join(tempDir, `scan_${Date.now()}_${fileName}`);
+        const tempPath = path.join(tempDir, `scan_${requestId}_${fileName}`);
+        
+        console.log(`[ExternalAPI:${requestId}] Creating temp file at: ${tempPath}`);
         
         try {
             const buff = Buffer.from(await file.arrayBuffer());
+            console.log(`[ExternalAPI:${requestId}] File buffer created: ${buff.length} bytes`);
+            
             await writeFile(tempPath, buff);
+            console.log(`[ExternalAPI:${requestId}] Temp file written successfully`);
 
-            console.log(`Scanning file: ${fileName} (${file.size} bytes)`);
+            console.log(`[ExternalAPI:${requestId}] Initiating VirusTotal scan...`);
             
             // Perform VirusTotal scan
             const scanResult = await checkFileWithVirusTotal(tempPath, env.virusTotalApiKey);
 
-            console.log(`VirusTotal scan result for ${fileName}:`, scanResult);
+            console.log(`[ExternalAPI:${requestId}] VirusTotal scan completed`);
+            console.log(`[ExternalAPI:${requestId}] Result:`, JSON.stringify(scanResult, null, 2));
 
             // Clean up temp file
             await unlink(tempPath);
+            console.log(`[ExternalAPI:${requestId}] Temp file cleaned up`);
 
             return c.json({
                 scanned: scanResult.scanned,
@@ -81,18 +98,32 @@ app.post("/scan/virustotal", async (c) => {
             });
 
         } catch (error) {
+            console.error(`[ExternalAPI:${requestId}] Error during scan process:`, error);
             // Clean up temp file on error
-            try { await unlink(tempPath); } catch {}
+            try { 
+                await unlink(tempPath); 
+                console.log(`[ExternalAPI:${requestId}] Temp file cleaned up after error`);
+            } catch (cleanupError) {
+                console.error(`[ExternalAPI:${requestId}] Failed to cleanup temp file:`, cleanupError);
+            }
             throw error;
         }
 
     } catch (error) {
-        console.error('VirusTotal scan error:', error);
+        console.error(`[ExternalAPI:${requestId}] VirusTotal scan error:`, error);
+        if (error instanceof Error) {
+            console.error(`[ExternalAPI:${requestId}] Error details:`, {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
+        }
         return c.json({ 
             error: 'Scan failed',
             scanned: false,
             isMalicious: false,
-            fileName: 'unknown'
+            fileName: 'unknown',
+            details: error instanceof Error ? error.message : 'Unknown error'
         }, 500);
     }
 });

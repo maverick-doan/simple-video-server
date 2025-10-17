@@ -23,33 +23,59 @@ export class ExternalApiClient {
      * Scan a file using VirusTotal via external API service
      */
     static async scanFileWithVirusTotal(fileBuffer: Buffer, fileName: string): Promise<VirusScanResult> {
+        const apiUrl = `${this.EXTERNAL_API_BASE_URL}/scan/virustotal`;
+        console.log(`[ExternalAPIClient] Sending scan request to: ${apiUrl}`);
+        console.log(`[ExternalAPIClient] File: ${fileName}, Size: ${fileBuffer.length} bytes`);
+        
         try {
             const formData = new FormData();
             const blob = new Blob([fileBuffer], { type: 'application/octet-stream' });
             formData.append('file', blob, fileName);
             formData.append('fileName', fileName);
 
-            const response = await fetch(`${this.EXTERNAL_API_BASE_URL}/scan/virustotal`, {
+            console.log(`[ExternalAPIClient] FormData prepared, sending request...`);
+
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 body: formData
             });
 
+            console.log(`[ExternalAPIClient] Response status: ${response.status} ${response.statusText}`);
+
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`[ExternalAPIClient] External API error response:`, errorText);
                 throw new Error(`External API service error: ${response.statusText}`);
             }
 
             const result = await response.json();
+            console.log(`[ExternalAPIClient] Scan result received:`, result);
+            
             return result as VirusScanResult;
 
         } catch (error) {
-            console.error('Failed to scan file with external API service:', error);
+            console.error(`[ExternalAPIClient] Failed to scan file with external API service:`, error);
+            if (error instanceof Error) {
+                console.error(`[ExternalAPIClient] Error details:`, {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
+            }
+            
+            // Check if it's a network error
+            if (error instanceof TypeError && error.message.includes('fetch')) {
+                console.error(`[ExternalAPIClient] Network error - External API service may be unreachable`);
+                console.error(`[ExternalAPIClient] Check if external-api service is running at: ${this.EXTERNAL_API_BASE_URL}`);
+            }
+            
             return {
                 scanned: false,
                 isMalicious: false,
                 maliciousCount: 0,
                 totalVendors: 0,
                 fileName: fileName,
-                message: 'Scan failed due to service error'
+                message: `Scan failed: ${error instanceof Error ? error.message : 'Unknown error'}`
             };
         }
     }

@@ -62,9 +62,16 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
 
         // The VirusTotal external API call is now handled by the external API service
         // This provides better separation of concerns and allows for scaling external API calls independently
+        console.log(`[VideoUpload] Initiating VirusTotal scan via external API for file: ${baseName}.${ext}`);
+        console.log(`[VideoUpload] File size: ${buff.length} bytes`);
+        
         const virusScanResult = await ExternalApiClient.scanFileWithVirusTotal(buff, `${baseName}.${ext}`);
         
+        console.log(`[VideoUpload] VirusTotal scan result received:`, JSON.stringify(virusScanResult, null, 2));
+        
         if (virusScanResult.isMalicious && virusScanResult.scanned) {
+            console.error(`[VideoUpload] File REJECTED - Malicious content detected!`);
+            console.error(`[VideoUpload] Malicious count: ${virusScanResult.maliciousCount}/${virusScanResult.totalVendors}`);
             await unlink(tempPath);
             return c.json({
                 error: 'File rejected: Potential security threat detected',
@@ -74,9 +81,11 @@ export async function uploadVideo(c: Context<{ Variables: AppBindings }>) {
         }
         
         if (!virusScanResult.scanned) {
-            console.log('VirusTotal Scan Failed. Skipping..');
+            console.warn(`[VideoUpload] VirusTotal scan was not performed - continuing with upload`);
+            console.warn(`[VideoUpload] Reason: ${virusScanResult.message || 'File not in VT database or scan failed'}`);
         } else {
-            console.log('VirusTotal Scan Passed.');
+            console.log(`[VideoUpload] VirusTotal scan PASSED - File is clean`);
+            console.log(`[VideoUpload] Scan stats: 0 malicious out of ${virusScanResult.totalVendors} vendors`);
         }
 
         const meta: ProbeResult = await probe(tempPath);
