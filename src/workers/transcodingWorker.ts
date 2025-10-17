@@ -168,39 +168,3 @@ export class TranscodingWorker {
         };
     }
 }
-
-// Worker entry point
-if (require.main === module) {
-    const worker = new TranscodingWorker();
-    
-    // Graceful shutdown handling
-    process.on('SIGTERM', () => {
-        console.log('Received SIGTERM, shutting down gracefully');
-        worker.stop();
-        process.exit(0);
-    });
-
-    process.on('SIGINT', () => {
-        console.log('Received SIGINT, shutting down gracefully');
-        worker.stop();
-        process.exit(0);
-    });
-
-    process.on('uncaughtException', (error) => {
-        console.error('Uncaught exception:', error);
-        worker.stop();
-        process.exit(1);
-    });
-
-    process.on('unhandledRejection', (reason, promise) => {
-        console.error('Unhandled rejection at:', promise, 'reason:', reason);
-        worker.stop();
-        process.exit(1);
-    });
-
-    // Start the worker
-    worker.start().catch((error) => {
-        console.error('Worker failed to start:', error);
-        process.exit(1);
-    });
-}
