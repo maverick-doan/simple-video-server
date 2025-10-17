@@ -7,6 +7,10 @@ const app = new Hono();
 app.route('/api/auth', authRouter);
 app.route('/api/video', videoRouter);
 
+app.get('/health', (c) => {
+    return c.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  });
+
 app.notFound((c) => {
     return c.json({
         message: "Not Found"
