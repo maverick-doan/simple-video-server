@@ -111,3 +111,8 @@ variable "cognito_ses_source_arn" {
   description = "SES source ARN for Cognito email sending"
   type        = string
 }
+
+variable "alb_certificate_arn" {
+  description = "ALB certificate ARN"
+  type        = string
+}
