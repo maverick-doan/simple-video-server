@@ -1,7 +1,3 @@
-# ================================================
-# Application Load Balancer
-# ================================================
-
 resource "aws_lb" "video_app_alb" {
   name               = "${var.qut_student_id}-video-app-alb"
   internal           = false

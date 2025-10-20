@@ -1,5 +1,6 @@
 # This is the deployment script for QUT AWS
 # Provided we already had certain resources preconfigured in place
+
 terraform {
   required_version = ">= 1.0"
   required_providers {

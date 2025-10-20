@@ -1,7 +1,3 @@
-# ================================================
-# ECS Cluster
-# ================================================
-
 resource "aws_ecs_cluster" "video_app_cluster" {
   name = "${var.qut_student_id}-video-app-cluster"
 
@@ -27,15 +23,11 @@ resource "aws_ecs_cluster" "video_app_cluster" {
 # - Private Subnets: Redis Service (6379), Transcoding Worker - no public IPs
 # - Uses existing subnet data to avoid duplication
 
-# ================================================
-# ECS Task Definitions
-# ================================================
-
 # 1. API Service Task Definition
 resource "aws_ecs_task_definition" "api_service" {
   family                   = "${var.qut_student_id}-api-service"
   network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
+  requires_compatibilities = ["FARGATE"]    
   cpu                      = 512  # 0.5 vCPU
   memory                   = 1024 # 1GB
   execution_role_arn       = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/Execution-Role-CAB432-ECS"
@@ -151,10 +143,6 @@ resource "aws_ecs_task_definition" "redis_service" {
     purpose        = "assessment 3"
   }
 }
-
-# ================================================
-# ECS Services
-# ================================================
 
 # 1. Redis Service (Private subnet, no public IP)
 resource "aws_ecs_service" "redis_service" {
