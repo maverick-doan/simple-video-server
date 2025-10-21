@@ -1,7 +1,3 @@
-# ================================================
-# Outputs
-# ================================================
-
 output "ecs_cluster_name" {
   value = aws_ecs_cluster.video_app_cluster.name
 }
@@ -80,4 +76,12 @@ output "alb_dns_name" {
 
 output "alb_zone_id" {
   value = aws_lb.video_app_alb.zone_id
+}
+
+output "redis_nlb_dns_name" {
+  value = aws_lb.redis_nlb_v2.dns_name
+}
+
+output "redis_nlb_zone_id" {
+  value = aws_lb.redis_nlb_v2.zone_id
 }

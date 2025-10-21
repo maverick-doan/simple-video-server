@@ -13,15 +13,13 @@ resource "aws_ecs_cluster" "video_app_cluster" {
   }
 }
 
-# CAB432SG (sg-032bd1ff8cf77dbb9) for all ECS services
-# This security group has ports 3000-3010 open for our API services
-# Redis (6379) will be accessible within the same security group for inter-service communication
-# All services can communicate with each other since they're in the same security group
-#
-# Subnet Architecture:
-# - Public Subnets: API Service (3000), External API Service (3001) - with public IPs
-# - Private Subnets: Redis Service (6379), Transcoding Worker - no public IPs
-# - Uses existing subnet data to avoid duplication
+# Architecture:
+# - API Service: https://a3group68.cab432.com/ (default route via ALB)
+# - External API Service: https://a3group68.cab432.com/external-api/* (via ALB)
+# - Redis Service: NLB (TCP) - accessible via NLB DNS name
+# - Transcoding Worker: No load balancer, communicates via SQS
+# - External API URL: https://a3group68.cab432.com/external-api
+# - Redis URL: redis://[NLB_DNS_NAME]:3001  
 
 # 1. API Service Task Definition
 resource "aws_ecs_task_definition" "api_service" {
@@ -40,11 +38,13 @@ resource "aws_ecs_task_definition" "api_service" {
     portMappings = [{
       containerPort = 3000
       protocol      = "tcp"
+      name          = "api-service"
     }]
 
     environment = [
       { name = "NODE_ENV", value = "production" },
-      { name = "PORT", value = "3000" }
+      { name = "PORT", value = "3000" },
+      { name = "AWS_REGION", value = "ap-southeast-2" }
     ]
 
   }])
@@ -70,8 +70,15 @@ resource "aws_ecs_task_definition" "transcoding_worker" {
     name  = "transcoding-worker"
     image = "${aws_ecr_repository.qut_ecr_repository.repository_url}:worker-latest"
 
+    portMappings = [{
+      containerPort = 8080
+      protocol      = "tcp"
+      name          = "transcoding-worker"
+    }]
+
     environment = [
-      { name = "NODE_ENV", value = "production" }
+      { name = "NODE_ENV", value = "production" },
+      { name = "AWS_REGION", value = "ap-southeast-2" }
     ]
 
   }])
@@ -100,11 +107,13 @@ resource "aws_ecs_task_definition" "external_api" {
     portMappings = [{
       containerPort = 3001
       protocol      = "tcp"
+      name          = "external-api"
     }]
 
     environment = [
       { name = "NODE_ENV", value = "production" },
-      { name = "PORT", value = "3001" }
+      { name = "PORT", value = "3001" },
+      { name = "AWS_REGION", value = "ap-southeast-2" }
     ]
   }])
 
@@ -130,11 +139,12 @@ resource "aws_ecs_task_definition" "redis_service" {
     image = "redis:7-alpine"
 
     portMappings = [{
-      containerPort = 6379
+      containerPort = 3001
       protocol      = "tcp"
+      name          = "redis"
     }]
 
-    command = ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    command = ["redis-server","--port", "3001", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
   }])
 
   tags = {
@@ -144,7 +154,7 @@ resource "aws_ecs_task_definition" "redis_service" {
   }
 }
 
-# 1. Redis Service (Private subnet, no public IP)
+# 1. Redis Service (Public subnet, with NLB)
 resource "aws_ecs_service" "redis_service" {
   name            = "${var.qut_student_id}-redis-service"
   cluster         = aws_ecs_cluster.video_app_cluster.id
@@ -153,9 +163,15 @@ resource "aws_ecs_service" "redis_service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = data.aws_subnets.private_subnets.ids
+    subnets          = [data.aws_subnet.qut_subnet.id]
     security_groups  = [data.aws_security_group.qut_security_group.id]
-    assign_public_ip = false
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.redis_nlb_tg_v2.arn
+    container_name   = "redis"
+    container_port   = 3001
   }
 
   tags = {
@@ -177,6 +193,12 @@ resource "aws_ecs_service" "external_api" {
     subnets          = [data.aws_subnet.qut_subnet.id]
     security_groups  = [data.aws_security_group.qut_security_group.id]
     assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.external_api.arn
+    container_name   = "external-api"
+    container_port   = 3001
   }
 
   tags = {
@@ -228,9 +250,9 @@ resource "aws_ecs_service" "transcoding_worker" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = data.aws_subnets.private_subnets.ids
+    subnets          = [data.aws_subnet.qut_subnet.id]
     security_groups  = [data.aws_security_group.qut_security_group.id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   depends_on = [
