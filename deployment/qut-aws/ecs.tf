@@ -303,7 +303,7 @@ resource "aws_appautoscaling_policy" "worker_sqs_depth_target" {
   scalable_dimension = aws_appautoscaling_target.worker_desired_count.scalable_dimension
 
   target_tracking_scaling_policy_configuration {
-    target_value = 5
+    target_value = 2
 
     customized_metric_specification {
       metric_name = "ApproximateNumberOfMessagesVisible"
