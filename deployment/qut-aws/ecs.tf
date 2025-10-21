@@ -265,3 +265,59 @@ resource "aws_ecs_service" "transcoding_worker" {
     purpose        = "assessment 3"
   }
 }
+
+# Target: scale DesiredCount for the transcoding worker
+resource "aws_appautoscaling_target" "worker_desired_count" {
+  max_capacity       = 4
+  min_capacity       = 1
+  service_namespace  = "ecs"
+  resource_id        = "service/${aws_ecs_cluster.video_app_cluster.name}/${aws_ecs_service.transcoding_worker.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+}
+
+# Policy: keep average CPU ~70%
+resource "aws_appautoscaling_policy" "worker_cpu_target" {
+  name               = "${var.qut_student_id}-worker-cpu-target"
+  policy_type        = "TargetTrackingScaling"
+  service_namespace  = aws_appautoscaling_target.worker_desired_count.service_namespace
+  resource_id        = aws_appautoscaling_target.worker_desired_count.resource_id
+  scalable_dimension = aws_appautoscaling_target.worker_desired_count.scalable_dimension
+
+  target_tracking_scaling_policy_configuration {
+    target_value = 70
+
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 60
+  }
+}
+
+resource "aws_appautoscaling_policy" "worker_sqs_depth_target" {
+  name               = "${var.qut_student_id}-worker-sqs-depth"
+  policy_type        = "TargetTrackingScaling"
+  service_namespace  = aws_appautoscaling_target.worker_desired_count.service_namespace
+  resource_id        = aws_appautoscaling_target.worker_desired_count.resource_id
+  scalable_dimension = aws_appautoscaling_target.worker_desired_count.scalable_dimension
+
+  target_tracking_scaling_policy_configuration {
+    target_value = 5
+
+    customized_metric_specification {
+      metric_name = "ApproximateNumberOfMessagesVisible"
+      namespace   = "AWS/SQS"
+      statistic   = "Average"
+      unit        = "Count"
+
+      dimensions {
+        name  = "QueueName"
+        value = aws_sqs_queue.transcoding_queue.name
+      }
+    }
+
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 30
+  }
+}
