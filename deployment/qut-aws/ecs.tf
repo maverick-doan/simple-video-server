@@ -14,11 +14,11 @@ resource "aws_ecs_cluster" "video_app_cluster" {
 }
 
 # Architecture:
-# - API Service: https://a3group68.cab432.com/ (default route via ALB)
-# - External API Service: https://a3group68.cab432.com/external-api/* (via ALB)
+# - API Service: https://[DNS_NAME]/ (default route via ALB)
+# - External API Service: https://[DNS_NAME]/external-api/* (via ALB)
 # - Redis Service: NLB (TCP) - accessible via NLB DNS name
 # - Transcoding Worker: No load balancer, communicates via SQS
-# - External API URL: https://a3group68.cab432.com/external-api
+# - External API URL: https://[DNS_NAME]/external-api
 # - Redis URL: redis://[NLB_DNS_NAME]:3001  
 
 # 1. API Service Task Definition
